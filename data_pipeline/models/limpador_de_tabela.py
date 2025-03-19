@@ -1,7 +1,5 @@
-# Limpeza e Filtragem de Dados do Comex Stat (2014-2024)
-
+import os
 import pandas as pd
-
 from models.tabelasComexStat import TabelasComexStat
 
 
@@ -12,19 +10,18 @@ class LimpadorDeTabela:
         self.tipo:str
         self.df_raw: pd.DataFrame
         self.df: pd.DataFrame
-        self.nome_arquivo: pd.DataFrame
-        self.estado_inicial:dict
-
-        self.peso_zero: pd.DataFrame
-        self.qt_estat_zero: pd.DataFrame
-        self.sigla_nd:pd.DataFrame
-        self.vl_fob_zero: pd.DataFrame
-        self.va_nan_inf: pd.DataFrame
-        self.co_via_invalida:pd.DataFrame
-        self.rotas_absurdas:pd.DataFrame = []
-        self.pais_invalido:pd.DataFrame
-
-        self.estado_final:dict
+        self.nome_arquivo: str
+        self.peso_zero: pd.DataFrame = pd.DataFrame({})
+        self.qt_estat_zero: pd.DataFrame = pd.DataFrame({})
+        self.sigla_nd:pd.DataFrame = pd.DataFrame({})
+        self.vl_fob_zero: pd.DataFrame = pd.DataFrame({})
+        self.va_nan_inf: pd.DataFrame = pd.DataFrame({})
+        self.co_via_invalida:pd.DataFrame = pd.DataFrame({})
+        self.rotas_absurdas:pd.DataFrame = pd.DataFrame({})
+        self.pais_invalido:pd.DataFrame = pd.DataFrame({})
+        self.municipio_invalido:pd.DataFrame = pd.DataFrame({})
+        self.estado_invalido:pd.DataFrame = pd.DataFrame({})
+        self.urf_invalido:pd.DataFrame = pd.DataFrame({})
 
 
     def gerar_dataframe(self, ano:int, tipo:str):
@@ -32,35 +29,37 @@ class LimpadorDeTabela:
             - tipos suportados: 'exp', 'exp_mun', 'imp', 'imp_mun'
         '''
         tipo = tipo.lower()
+        self.ano = ano
         if tipo == 'exp':
-            self.df_raw = pd.read_csv(self.tabelas_cs.exportacao_ncm(str(ano)), delimiter=';', encoding='latin1')
+            url = self.tabelas_cs.exportacao_ncm(str(ano))
             self.nome_arquivo = f'EXP_{ano}'
             self.tipo = tipo
         elif tipo == 'imp':
-            self.df_raw = pd.read_csv(self.tabelas_cs.importacao_ncm(str(ano)), delimiter=';', encoding='latin1')
+            url = self.tabelas_cs.importacao_ncm(str(ano))
             self.nome_arquivo = f'IMP_{ano}'
             self.tipo = tipo
         elif tipo == 'exp_mun':
-            self.df_raw = pd.read_csv(self.tabelas_cs.exportacao_mun(str(ano)), delimiter=';', encoding='latin1')
+            url = self.tabelas_cs.exportacao_mun(str(ano))
             self.nome_arquivo = f'EXP_{ano}_MUN'
             self.tipo = tipo
         elif tipo == 'imp_mun':
-            self.df_raw = pd.read_csv(self.tabelas_cs.importacao_mun(str(ano)), delimiter=';', encoding='latin1')
+            url = self.tabelas_cs.importacao_mun(str(ano))
             self.nome_arquivo = f'IMP_{ano}_MUN'
             self.tipo = tipo
+        
+        print(f'Buscando tabela {self.nome_arquivo}.csv')
+
+        if os.path.exists(f'datasets/limpo/{self.ano}/{self.nome_arquivo}.csv'):
+            return False
+        
+        self.df_raw = pd.read_csv(url, delimiter=';', encoding='latin1')
         self.df = self.df_raw
-        self.estado_inicial = self.gerar_estado()
-        self.ano = ano
-
-
-    def gerar_estado(self) -> dict:
-        estado = {}
-        estado['linhas'] = len(self.df)
-        return estado
+        return True
 
 
     def criar_valor_agregado(self):
         # Criar coluna de valor agregado (VL_FOB por KG_LIQUIDO)
+        self.df_raw['VALOR_AGREGADO'] = self.df_raw['VL_FOB'] / self.df_raw['KG_LIQUIDO']
         self.df['VALOR_AGREGADO'] = self.df['VL_FOB'] / self.df['KG_LIQUIDO']
 
 
@@ -73,7 +72,7 @@ class LimpadorDeTabela:
         self.qt_estat_zero = self.df_raw[self.df_raw['QT_ESTAT'] <= 0]
         self.df = self.df[self.df['QT_ESTAT'] > 0]
 
-    
+
     def remover_vl_fob_zero(self):
         self.vl_fob_zero = self.df_raw[self.df_raw['VL_FOB'] <= 0]
         self.df = self.df[self.df['VL_FOB'] > 0]
@@ -94,7 +93,7 @@ class LimpadorDeTabela:
 
 
     def remover_va_inf_nan(self):
-        self.va_nan_inf = self.df_raw['VALOR_AGREGADO'].isna().sum() | self.df_raw['VALOR_AGREGADO'].isin([float('inf'), float('-inf')])
+        self.va_nan_inf = self.df_raw[self.df_raw['VALOR_AGREGADO'].isna() | self.df_raw['VALOR_AGREGADO'].isin([float('inf'), float('-inf')])]
         self.df = self.df.dropna(subset=['VALOR_AGREGADO'])
         self.df = self.df[~self.df['VALOR_AGREGADO'].isin([float('inf'), float('-inf')])]
 
@@ -110,7 +109,23 @@ class LimpadorDeTabela:
         paises_invalidos = [0, 990, 994, 995, 997, 998, 999]
         self.pais_invalido = self.df_raw[self.df_raw['CO_PAIS'].isin(paises_invalidos)]
         self.df = self.df[~self.df['CO_PAIS'].isin(paises_invalidos)].copy()
+    
 
+    def remover_municipio_nao_definido(self):
+        municipios_invalidos = [9999999]
+        self.municipio_invalido = self.df_raw[self.df_raw['CO_MUN'].isin(municipios_invalidos)]
+        self.df = self.df[~self.df['CO_MUN'].isin(municipios_invalidos)].copy()
+
+    
+    def remover_urf_nao_definido(self):
+        urf_invalidos = [0, 9999999, 8110000, 1010109, 815400]
+        self.urf_invalido = self.df_raw[self.df_raw['CO_URF'].isin(urf_invalidos)]
+        self.df = self.df[~self.df['CO_URF'].isin(urf_invalidos)].copy()
+    
+    def remover_estado_nao_definido(self):
+        estados_invalidos = ['EX', 'CB', 'MN', 'RE', 'ED', 'ND', 'ZN']
+        self.estado_invalido = self.df_raw[self.df_raw['SG_UF_NCM'].isin(estados_invalidos)]
+        self.df = self.df[~self.df['SG_UF_NCM'].isin(estados_invalidos)].copy()
 
     def remover_rotas_absurdas(self):
         paises_url = self.tabelas_cs.auxiliar('PAIS_BLOCO')
@@ -166,21 +181,45 @@ class LimpadorDeTabela:
             'Vias inválidas': len(self.co_via_invalida),
             'Rotas absurdas': len(self.rotas_absurdas),
             'Países não definidos': len(self.pais_invalido),
+            'Estados não definidos': len(self.estado_invalido),
+            'Municipios não definidos': len(self.municipio_invalido),
+            'URF não informados': len(self.urf_invalido),
             'Quantidade de linhas finais': len(self.df),
             'Total de linhas excluídas': len(self.df_raw) - len(self.df)
         }
-        print(linhas_invalidas)
+        # print("Resumo dos dados brutos:")
+        # print(self.df_raw.info())
+        print(f"\nEstatísticas descritivas dos dados brutos:\nAno: {self.ano}")
+        print(self.df_raw.describe())
+
+        # print('\nResumo dos dados limpos:')
+        # print(self.df.info())
+        print(f'\nEstatísticas descritivas dos dados limpos:\nAno:{self.ano}')
+        print(self.df.describe())
+
+        print('\nResumo das linhas excluídas')
+        for key, value in linhas_invalidas.items():
+            print(f'\t{key}:{value}')
+
         relatorio = pd.DataFrame(list(linhas_invalidas.items()), columns=['Dado', 'Valor'])
-        relatorio_path = f'data_pipeline/datasets/relatorios/{self.nome_arquivo}_rel.csv'
+        output_dir = f'datasets/relatorios/{self.ano}'
+        os.makedirs(output_dir, exist_ok=True)
+        relatorio_path = f'{output_dir}/{self.nome_arquivo}_rel.csv'
         relatorio.to_csv(relatorio_path, index=False, encoding='latin1')
-        print(f"Relatório de limpeza salvo em: {relatorio_path}")
+        print(f"\nRelatório de limpeza salvo em: {relatorio_path}")
 
 
     def salvar_registros_excluidos(self):
         def salvar_tabela(df:pd.DataFrame, nome:str):
-            path = f'data_pipeline/datasets/registros_excluidos/{self.tipo}_{self.ano}_{nome}.csv'
-            df.to_csv(path, index=False, encoding='latin1')
-            print(f'tabela {nome} salva em {path}')      
+            try:
+                output_dir = f'datasets/registros_excluidos/{self.ano}'
+                os.makedirs(output_dir, exist_ok=True)
+                path = f'{output_dir}/{self.tipo}_{self.ano}_{nome}.csv'
+                df.to_csv(path, index=False, encoding='latin1')
+                print(f'tabela {nome} salva em {path}')
+            except AttributeError as e:
+                print(e.name)
+                pass
         mapa = {
             'qt_estat_zero': self.qt_estat_zero,
             'sigla_nd': self.sigla_nd,
@@ -189,39 +228,49 @@ class LimpadorDeTabela:
             'via_invalida': self.co_via_invalida,
             'rotas_absurdas': self.rotas_absurdas,
             'pais_invalido': self.pais_invalido,
+            'estado_invalido': self.estado_invalido,
+            'municipio_invalido': self.municipio_invalido,
+            'urf_invalido': self.urf_invalido
         }
         for key, value in mapa.items():
             salvar_tabela(value, key)
 
 
-    def executar(self):        
-        # Análise inicial dos dados
-        print("Resumo dos dados:")
-        print(self.df.info())
-        print("\nEstatísticas descritivas:")
-        print(self.df.describe())
-        print("\nColunas")
-        print(self.df.columns)
+    def salvar_tabela_limpa(self):
+        output_dir = f'datasets/limpo/{self.ano}'
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = f'{output_dir}/{self.nome_arquivo}.csv'
+        self.df.to_csv(output_path, index=False, encoding='latin1')
+        print(f"Dados limpos salvos em: {output_path}")
 
+
+    def limpar(self):
+        colunas = self.df.columns
+        print(f'Iniciando limpeza da tabela {self.nome_arquivo}')
         self.criar_valor_agregado()
         self.remover_peso_zero()
-        self.remover_qt_zero()
+        if 'QT_ESTAT' in colunas: self.remover_qt_zero() 
         self.remover_vl_fob_zero()
         self.remover_sigla_nd()
         self.remover_va_inf_nan()
-        self.remover_via_invalida()
+        if 'CO_VIA' in colunas: 
+            self.remover_via_invalida()
+            self.remover_rotas_absurdas()
         self.remover_pais_nao_definido()
-        self.remover_rotas_absurdas()
+        if 'CO_MUN' in colunas: self.remover_municipio_nao_definido()
+        if 'SG_UF_NCM' in colunas: self.remover_estado_nao_definido()
+        if 'CO_URF' in colunas: self.remover_urf_nao_definido()
 
-        self.gerar_relatorio()
-
-        output_path = f'data_pipeline/datasets/limpo/{self.nome_arquivo}.csv'
-        self.df.to_csv(output_path, index=False, encoding='latin1')
-
-        print(f"Dados limpos salvos em: {output_path}")
-        # print(self.df.describe())
-
+        self.salvar_tabela_limpa()
         self.salvar_registros_excluidos()
+        self.gerar_relatorio()
+        
+
+    def limpar_e_salvar_tabelas(self):
+        self.limpar()
+        self.salvar_tabela_limpa()
+        self.salvar_registros_excluidos()
+        self.gerar_relatorio()
 
 
 # exemplo de uso:
