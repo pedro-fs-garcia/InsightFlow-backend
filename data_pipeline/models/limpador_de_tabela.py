@@ -171,42 +171,41 @@ class LimpadorDeTabela:
 
 
     def gerar_relatorio(self):
-        total_excluido = len(self.df_raw) + len(self.qt_estat_zero) + len(self.sigla_nd) + len(self.vl_fob_zero) + len(self.va_nan_inf) + len(self.co_via_invalida) + len(self.rotas_absurdas)
+        len_df_raw = len(self.df_raw)
+        len_df = len(self.df)
         linhas_invalidas = {
-            'Quantidade de linhas iniciais': len(self.df_raw),
-            'Quantidade Zero': len(self.qt_estat_zero),
-            'siglas ND': len(self.sigla_nd),
-            'VL_FOB zero': len(self.vl_fob_zero),
-            'Valores Infinitos/NaN': len(self.va_nan_inf),
-            'Vias inválidas': len(self.co_via_invalida),
-            'Rotas absurdas': len(self.rotas_absurdas),
-            'Países não definidos': len(self.pais_invalido),
-            'Estados não definidos': len(self.estado_invalido),
-            'Municipios não definidos': len(self.municipio_invalido),
-            'URF não informados': len(self.urf_invalido),
-            'Quantidade de linhas finais': len(self.df),
-            'Total de linhas excluídas': len(self.df_raw) - len(self.df)
+            'Quantidade de linhas iniciais': len_df_raw,
+            'Registros inválidos por KG Líquido = 0': len(getattr(self, 'peso_zero', [])),
+            'Registros inválidos por Quantidade Estatística = 0': len(getattr(self, 'qt_estat_zero', [])),
+            'Registros inválidos por Siglas ND': len(getattr(self, 'sigla_nd', [])),
+            'Registros inválidos por VL_FOB = 0': len(getattr(self, 'vl_fob_zero', [])),
+            'Registros inválidos por Valores Infinitos/NaN': len(getattr(self, 'va_nan_inf', [])),
+            'Registros inválidos por Vias de transporte inválidas': len(getattr(self, 'co_via_invalida', [])),
+            'Registros inválidos por Rotas absurdas': len(getattr(self, 'rotas_absurdas', [])),
+            'Registros inválidos por Países não definidos': len(getattr(self, 'pais_invalido', [])),
+            'Registros inválidos por Estados não definidos': len(getattr(self, 'estado_invalido', [])),
+            'Registros inválidos por Municípios não definidos': len(getattr(self, 'municipio_invalido', [])),
+            'Registros inválidos por URF não informada': len(getattr(self, 'urf_invalido', [])),
+            'Quantidade de linhas finais': len_df,
+            'Total de linhas excluídas': len_df_raw - len_df
         }
-        # print("Resumo dos dados brutos:")
-        # print(self.df_raw.info())
-        print(f"\nEstatísticas descritivas dos dados brutos:\nAno: {self.ano}")
+        print(f"\n📊 Estatísticas dos Dados Brutos (Ano: {self.ano})")
         print(self.df_raw.describe())
-
-        # print('\nResumo dos dados limpos:')
-        # print(self.df.info())
-        print(f'\nEstatísticas descritivas dos dados limpos:\nAno:{self.ano}')
+        print(f"\n📊 Estatísticas dos Dados Limpos (Ano: {self.ano})")
         print(self.df.describe())
+        
+        from tabulate import tabulate
+        print("\n📌 Resumo das Linhas Excluídas:\n")
+        tabela_remocoes = [[key, value] for key, value in linhas_invalidas.items()]
+        print(tabulate(tabela_remocoes, headers=["Critério", "Quantidade"], tablefmt="grid"))
+        
+        relatorio = pd.DataFrame(list(linhas_invalidas.items()), columns=['Critério', 'Quantidade'])
 
-        print('\nResumo das linhas excluídas')
-        for key, value in linhas_invalidas.items():
-            print(f'\t{key}:{value}')
-
-        relatorio = pd.DataFrame(list(linhas_invalidas.items()), columns=['Dado', 'Valor'])
         output_dir = f'datasets/relatorios/{self.ano}'
         os.makedirs(output_dir, exist_ok=True)
         relatorio_path = f'{output_dir}/{self.nome_arquivo}_rel.csv'
         relatorio.to_csv(relatorio_path, index=False, encoding='latin1')
-        print(f"\nRelatório de limpeza salvo em: {relatorio_path}")
+        print(f"\n✅ Relatório de limpeza salvo em: {relatorio_path}")
 
 
     def salvar_registros_excluidos(self):

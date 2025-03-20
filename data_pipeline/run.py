@@ -15,6 +15,7 @@ def executar_limpador_ano(ano:int):
                 print(f'tabela {limpador.nome_arquivo} já foi tratada.\n')
         except http.client.IncompleteRead as e:
             resolved = False
+            print(f'Não foi possível acessar a tabela {limpador.nome_arquivo} por {e}')
             pass
     return resolved
 
