@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
 from models.tabelasComexStat import TabelasComexStat
 
 
@@ -170,7 +171,65 @@ class LimpadorDeTabela:
         self.df = self.df[~self.df.isin(self.rotas_absurdas)].dropna()
 
 
-    def gerar_relatorio(self):
+    def gerar_grafico_vias_invalidas(self):
+        if not 'CO_VIA' in self.df.columns or len(self.co_via_invalida) <= 0:
+            return
+        rotas_url = self.tabelas_cs.auxiliar('VIA')
+        rotas = pd.read_csv(rotas_url, delimiter=';', encoding='latin1')
+        df_merged = self.co_via_invalida.merge(rotas[['CO_VIA', 'NO_VIA']], on='CO_VIA', how='left')
+        contagem_por_via = df_merged.groupby('NO_VIA').size().reset_index(name='Quantidade')
+
+        plt.figure(figsize=(10, 6))
+        plt.bar(contagem_por_via['NO_VIA'], contagem_por_via['Quantidade'], color='skyblue')
+
+        plt.xlabel('Nome da via')
+        plt.ylabel('Quantidade de Registros')
+        plt.title(f'Quantidade de Registros por via {self.nome_arquivo}')
+
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.show()
+
+
+    def gerar_grafico_paises_invalidos(self):
+        if not 'CO_PAIS' in self.df.columns or len(self.pais_invalido) <= 0:
+            return
+        paises_url = self.tabelas_cs.auxiliar('PAIS')
+        paises = pd.read_csv(paises_url, delimiter=';', encoding='latin1')
+        df_merged = self.pais_invalido.merge(paises[['CO_PAIS', 'NO_PAIS']], on='CO_PAIS', how='left')
+        contagem_por_pais = df_merged.groupby('NO_PAIS').size().reset_index(name='Quantidade')
+        plt.figure(figsize=(10, 6))
+        plt.bar(contagem_por_pais['NO_PAIS'], contagem_por_pais['Quantidade'], color='skyblue')
+
+        plt.xlabel('Nome do país')
+        plt.ylabel('Quantidade de Registros')
+        plt.title(f'Quantidade de Registros por país inválido {self.nome_arquivo}')
+
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.show()
+
+
+    def gerar_grafico_estados_invalidos(self):
+        if not 'SG_UF_NCM' in self.df.columns or len(self.estado_invalido) <= 0:
+            return
+        estados_url = self.tabelas_cs.auxiliar('UF')
+        estados = pd.read_csv(estados_url, delimiter=';', encoding='latin1')
+        df_merged = self.estado_invalido.merge(estados[['SG_UF', 'NO_UF']], left_on='SG_UF_NCM', right_on='SG_UF', how='left')
+        contagem_por_estado = df_merged.groupby('SG_UF_NCM').size().reset_index(name='Quantidade')
+        plt.figure(figsize=(10, 6))
+        plt.bar(contagem_por_estado['SG_UF_NCM'], contagem_por_estado['Quantidade'], color='skyblue')
+
+        plt.xlabel('Nome do estado')
+        plt.ylabel('Quantidade de Registros')
+        plt.title(f'Quantidade de Registros por estado inválido {self.nome_arquivo}')
+
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        plt.show()
+
+
+    def gerar_relatorio_registros_excluidos(self):
         len_df_raw = len(self.df_raw)
         len_df = len(self.df)
         linhas_invalidas = {
@@ -178,13 +237,13 @@ class LimpadorDeTabela:
             'Registros inválidos por KG Líquido = 0': len(getattr(self, 'peso_zero', [])),
             'Registros inválidos por Quantidade Estatística = 0': len(getattr(self, 'qt_estat_zero', [])),
             'Registros inválidos por Siglas ND': len(getattr(self, 'sigla_nd', [])),
-            'Registros inválidos por VL_FOB = 0': len(getattr(self, 'vl_fob_zero', [])),
+            'Registros inválidos por Valor FOB = 0': len(getattr(self, 'vl_fob_zero', [])),
             'Registros inválidos por Valores Infinitos/NaN': len(getattr(self, 'va_nan_inf', [])),
             'Registros inválidos por Vias de transporte inválidas': len(getattr(self, 'co_via_invalida', [])),
             'Registros inválidos por Rotas absurdas': len(getattr(self, 'rotas_absurdas', [])),
             'Registros inválidos por Países não definidos': len(getattr(self, 'pais_invalido', [])),
             'Registros inválidos por Estados não definidos': len(getattr(self, 'estado_invalido', [])),
-            'Registros inválidos por Municípios não definidos': len(getattr(self, 'municipio_invalido', [])),
+            'Registros inválidos por Município não declarado': len(getattr(self, 'municipio_invalido', [])),
             'Registros inválidos por URF não informada': len(getattr(self, 'urf_invalido', [])),
             'Quantidade de linhas finais': len_df,
             'Total de linhas excluídas': len_df_raw - len_df
@@ -206,6 +265,10 @@ class LimpadorDeTabela:
         relatorio_path = f'{output_dir}/{self.nome_arquivo}_rel.csv'
         relatorio.to_csv(relatorio_path, index=False, encoding='latin1')
         print(f"\n✅ Relatório de limpeza salvo em: {relatorio_path}")
+
+        self.gerar_grafico_vias_invalidas()
+        self.gerar_grafico_paises_invalidos()
+        self.gerar_grafico_estados_invalidos()
 
 
     def salvar_registros_excluidos(self):
@@ -259,17 +322,13 @@ class LimpadorDeTabela:
         if 'CO_MUN' in colunas: self.remover_municipio_nao_definido()
         if 'SG_UF_NCM' in colunas: self.remover_estado_nao_definido()
         if 'CO_URF' in colunas: self.remover_urf_nao_definido()
-
-        self.salvar_tabela_limpa()
-        self.salvar_registros_excluidos()
-        self.gerar_relatorio()
         
 
     def limpar_e_salvar_tabelas(self):
         self.limpar()
         self.salvar_tabela_limpa()
         self.salvar_registros_excluidos()
-        self.gerar_relatorio()
+        self.gerar_relatorio_registros_excluidos()
 
 
 # exemplo de uso:
