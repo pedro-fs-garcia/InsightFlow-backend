@@ -1,3 +1,4 @@
+from models.analise_de_tabela import AnaliseDeTabela
 from models.limpador_de_tabela import LimpadorDeTabela
 import http.client
 
@@ -26,6 +27,10 @@ def start():
         if not operation: not_resolved.append(ano)
     
     print('As operações não foram resolvidas para os anos:', not_resolved)
+
+# def start():
+#     at = AnaliseDeTabela("./datasets/limpo/2014/IMP_2014.csv")
+#     at.analisar_exportacoes()
 
 
 if __name__ == '__main__':
