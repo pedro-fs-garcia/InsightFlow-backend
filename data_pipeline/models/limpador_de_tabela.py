@@ -327,8 +327,8 @@ class LimpadorDeTabela:
     def limpar_e_salvar_tabelas(self):
         self.limpar()
         self.salvar_tabela_limpa()
-        self.salvar_registros_excluidos()
-        self.gerar_relatorio_registros_excluidos()
+        # self.salvar_registros_excluidos()
+        # self.gerar_relatorio_registros_excluidos()
 
 
 # exemplo de uso:
