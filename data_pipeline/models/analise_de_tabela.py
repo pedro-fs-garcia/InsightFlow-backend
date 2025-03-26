@@ -1,6 +1,7 @@
 from typing import Literal
 import pandas as pd
 from tabulate import tabulate
+import matplotlib.pyplot as plt
 
 from .tabelasComexStat import TabelasComexStat
 
@@ -26,10 +27,12 @@ class AnaliseDeTabela:
         total_fob = self.df['VL_FOB'].sum()
         total_peso = self.df['KG_LIQUIDO'].sum()
         total_transacoes = len(self.df)
+        total_va = total_fob/total_peso
         resultados = {
             'Total de Transações': total_transacoes,
             'Valor FOB Total': total_fob,
             'Peso Líquido Total': total_peso,
+            'Valor Agregado total' : total_va
         }
         print(f"\n📌 Dados gerais da tabela de {self.tipo}ortação do ano de {self.ano}:")
         print(tabulate(resultados.items(), headers=["info", "valor"], tablefmt="grid", floatfmt=",.2f"))
@@ -85,15 +88,32 @@ class AnaliseDeTabela:
         top_10.columns = ['Nome do País', 'Quantidade de Registros']
         print("\n📌 Top 10 Países com Mais Registros:")
         print(tabulate(top_10.values.tolist(), headers=['Nome do País', 'Quantidade de registros'], tablefmt="grid", floatfmt=",.2f"))
-        
+
+        # Somar o valor agregado por país
+        pais_destino = self.df.groupby(['CO_PAIS'])[['VL_FOB', 'KG_LIQUIDO']].mean().reset_index()
+        pais_destino['VALOR_AGREGADO'] = pais_destino['VL_FOB'] / pais_destino['KG_LIQUIDO']
+        pais_destino_ranked = pais_destino.sort_values(by='VALOR_AGREGADO', ascending=False)
+        top_10_paises = pais_destino_ranked.head(10)
+        top_10_paises = top_10_paises.merge(df_pais[['CO_PAIS', 'NO_PAIS']], on='CO_PAIS', how='left')
+        resultado = top_10_paises[['NO_PAIS', 'VALOR_AGREGADO']]
+        print("\n📌 Top 10 países por valor agregado total (Valor FOB total / KG líquido total):")
+        print(tabulate(resultado, headers=["País", "Valor Agregado Total"], tablefmt="grid", floatfmt=",.2f"))
+    
     
     def top_estados(self):
         top_estados = self.df['SG_UF_NCM'].value_counts().reset_index()
-        top_estados = top_estados [['SG_UF_NCM', 'count']]
-        top_estados["count"] = top_estados["count"].apply(lambda x: f"{x:,.2f}")
-        top_estados.columns = ['Estado', 'Quantidade de Registros']
-        print("\n📌 Ranking de estados com mais registros:")
-        print(tabulate(top_estados.values.tolist(), headers=['Estado', 'Quantidade de Registros'], tablefmt="grid", floatfmt=",.2f"))
+        top_estados.columns = ['SG_UF_NCM', 'Quantidade de Registros']
+
+        estado_destino = self.df.groupby('SG_UF_NCM')[['VL_FOB', 'KG_LIQUIDO']].sum().reset_index()
+        estado_destino['VALOR_AGREGADO'] = estado_destino['VL_FOB'] / estado_destino['KG_LIQUIDO']
+
+        estados_completos = top_estados.merge(estado_destino[['SG_UF_NCM', 'VALOR_AGREGADO']], on='SG_UF_NCM', how='left')
+        estados_completos = estados_completos.sort_values(by='VALOR_AGREGADO', ascending=False)
+
+        estados_completos["Quantidade de Registros"] = estados_completos["Quantidade de Registros"].apply(lambda x: f"{x:,}")
+        estados_completos["VALOR_AGREGADO"] = estados_completos["VALOR_AGREGADO"].apply(lambda x: f"{x:,.2f}")
+        print("\n📌 Ranking de estados por quantidade de registros e valor agregado total:")
+        print(tabulate(estados_completos.values.tolist(), headers=['Estado', 'Quantidade de Registros', 'Valor Agregado Total'], tablefmt="grid"))
     
 
     def top_vias(self):

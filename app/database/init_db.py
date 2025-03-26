@@ -22,7 +22,6 @@ def create_database_if_not_exists():
         with conn.cursor() as cur:
             db_name = configure.get('database')
             cur.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
-            conn.commit()
             app_logger.info('Banco de dados criado ou já existente.')
     except Error as e:
         conn.rollback()
@@ -36,11 +35,10 @@ def create_tables_if_not_exist():
     try:
         with conn.cursor() as cur:
             cur.execute(create_tables_script)
-            conn.commit()
             app_logger.info("Tabelas criadas ou já existentes.")
     except Error as e:
         conn.rollback()
-        error_logger.error("Erro ao criar tabelas no banco de dados.")
+        error_logger.error("Erro ao criar tabelas no banco de dados.", e)
     finally:
         if conn:conn.close()
 

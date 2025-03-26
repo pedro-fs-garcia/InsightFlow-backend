@@ -27,15 +27,13 @@ exp_df = exp_df.dropna(subset=['VALOR_AGREGADO'])
 exp_df = exp_df[exp_df['VALOR_AGREGADO'] != float('inf')]
 
 # Agrupar por estado e produto, somando peso e valor FOB
-ranking = exp_df.groupby(['SG_UF_NCM', 'NO_NCM_POR'])[['KG_LIQUIDO', 'VL_FOB']].sum().reset_index()
-
 # Calcular o valor agregado médio por estado
+ranking = exp_df.groupby(['SG_UF_NCM', 'NO_NCM_POR'])[['KG_LIQUIDO', 'VL_FOB']].sum().reset_index()
 ranking['VALOR_AGREGADO'] = ranking['VL_FOB'] / ranking['KG_LIQUIDO']
 
 # Ordenar pelo maior valor agregado
-ranking_sorted = ranking.sort_values(by='VALOR_AGREGADO', ascending=False)
-
 # Exibir os top 10 produtos com maior valor agregado
+ranking_sorted = ranking.sort_values(by='VALOR_AGREGADO', ascending=False)
 print("Top 10 produtos com maior valor agregado:")
 print(ranking_sorted.head(10))
 

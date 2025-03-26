@@ -1,11 +1,11 @@
 create_tables_script = '''
-CREATE TABLE municipio 
+CREATE TABLE IF NOT EXISTS municipio 
 ( 
     id_municipio INT PRIMARY KEY,  
     nome VARCHAR(100)  
 ); 
 
-CREATE TABLE estado 
+CREATE TABLE IF NOT EXISTS estado 
 ( 
     id_estado INT PRIMARY KEY,  
     sigla VARCHAR(2),  
@@ -14,7 +14,7 @@ CREATE TABLE estado
     FOREIGN KEY(id_municipio) REFERENCES municipio(id_municipio)
 ); 
 
-CREATE TABLE produto 
+CREATE TABLE IF NOT EXISTS produto 
 ( 
     id_produto INT PRIMARY KEY,  
     descricao VARCHAR(255),  
@@ -22,7 +22,7 @@ CREATE TABLE produto
     codigo_sh4 VARCHAR(10)  
 ); 
 
-CREATE TABLE transacao_comercial 
+CREATE TABLE IF NOT EXISTS transacao_comercial 
 ( 
     id_transacao INT PRIMARY KEY,  
     valor_fob DECIMAL(10,2),  
@@ -34,26 +34,26 @@ CREATE TABLE transacao_comercial
     valor_frete DECIMAL(10,2)  
 ); 
 
-CREATE TABLE pais 
+CREATE TABLE IF NOT EXISTS pais 
 ( 
     id_pais INT PRIMARY KEY,  
     nome VARCHAR(100)  
 ); 
 
-CREATE TABLE origem_destino 
+CREATE TABLE IF NOT EXISTS origem_destino 
 ( 
     id_transacao INT PRIMARY KEY,  
     tipo VARCHAR(50),  
     FOREIGN KEY(id_transacao) REFERENCES transacao_comercial(id_transacao)
 ); 
 
-CREATE TABLE modal_transporte 
+CREATE TABLE IF NOT EXISTS modal_transporte 
 ( 
     id_modal INT PRIMARY KEY,  
     descricao VARCHAR(255)  
 ); 
 
-CREATE TABLE transporte_transacao 
+CREATE TABLE IF NOT EXISTS transporte_transacao 
 ( 
     id_transacao INT PRIMARY KEY,  
     id_transacao_comercial INT,  
@@ -61,7 +61,7 @@ CREATE TABLE transporte_transacao
     FOREIGN KEY(id_transacao_comercial) REFERENCES transacao_comercial(id_transacao)  
 ); 
 
-CREATE TABLE processamento_rf 
+CREATE TABLE IF NOT EXISTS processamento_rf 
 ( 
     id_transacao INT PRIMARY KEY,  
     status VARCHAR(50),  
@@ -69,7 +69,7 @@ CREATE TABLE processamento_rf
     FOREIGN KEY(id_transacao_comercial) REFERENCES transacao_comercial(id_transacao)  
 ); 
 
-CREATE TABLE unidade_receita_federal 
+CREATE TABLE IF NOT EXISTS unidade_receita_federal 
 ( 
     id_unidade INT PRIMARY KEY,  
     nome VARCHAR(100),  
@@ -78,7 +78,7 @@ CREATE TABLE unidade_receita_federal
     FOREIGN KEY(id_processamento_rf) REFERENCES processamento_rf(id_transacao)  
 ); 
 
-CREATE TABLE participa 
+CREATE TABLE IF NOT EXISTS participa 
 ( 
     id_transacao INT,  
     id_estado INT,  
@@ -87,7 +87,7 @@ CREATE TABLE participa
     FOREIGN KEY(id_estado) REFERENCES estado(id_estado)  
 ); 
 
-CREATE TABLE registra 
+CREATE TABLE IF NOT EXISTS registra 
 ( 
     id_municipio INT,  
     id_transacao INT,  
@@ -96,7 +96,7 @@ CREATE TABLE registra
     FOREIGN KEY(id_transacao) REFERENCES transacao_comercial(id_transacao)  
 ); 
 
-CREATE TABLE envolve 
+CREATE TABLE IF NOT EXISTS envolve 
 ( 
     id_produto INT,  
     id_transacao INT,  
@@ -105,7 +105,7 @@ CREATE TABLE envolve
     FOREIGN KEY(id_transacao) REFERENCES transacao_comercial(id_transacao)  
 ); 
 
-CREATE TABLE possui 
+CREATE TABLE IF NOT EXISTS possui 
 ( 
     id_transacao_origem INT,  
     id_transacao_destino INT,  
@@ -114,7 +114,7 @@ CREATE TABLE possui
     FOREIGN KEY(id_transacao_destino) REFERENCES transacao_comercial(id_transacao)  
 ); 
 
-CREATE TABLE usado_em 
+CREATE TABLE IF NOT EXISTS usado_em 
 ( 
     id_transacao INT,  
     id_modal INT,  
@@ -123,7 +123,7 @@ CREATE TABLE usado_em
     FOREIGN KEY(id_modal) REFERENCES modal_transporte(id_modal)  
 ); 
 
-CREATE TABLE referencia 
+CREATE TABLE IF NOT EXISTS referencia 
 ( 
     id_transacao INT,  
     id_pais INT,  
