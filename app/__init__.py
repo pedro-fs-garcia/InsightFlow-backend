@@ -20,7 +20,7 @@ def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv("SECRET_KEY",'sua-chave-secreta')
 
-    init_db()
+    # init_db()
 
     limiter.init_app(app)
 

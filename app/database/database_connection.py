@@ -1,5 +1,5 @@
-from mysql.connector import connect, Error, pooling
-from mysql.connector.pooling import MySQLConnectionPool
+from mysql.connector import Error
+from mysql.connector.pooling import MySQLConnectionPool, PooledMySQLConnection
 from .. import config
 from ..utils.logging_config import app_logger, error_logger
 
@@ -14,7 +14,7 @@ configure = {
 
 
 try:
-    pool = pooling.MySQLConnectionPool(
+    pool = MySQLConnectionPool(
         pool_name="mypool",
         pool_size=5,
         **configure
@@ -26,7 +26,7 @@ except Error as e:
 
 
 # Função para obter conexões do pool
-def get_connection():
+def get_connection() -> PooledMySQLConnection | None:
     if pool:
         try:
             connection = pool.get_connection()
