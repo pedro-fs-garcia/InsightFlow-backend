@@ -23,7 +23,7 @@ class BuildDatabase:
                     id_pais = row['CO_PAIS']
                     nome = row['NO_PAIS']
                     cur.execute(
-                        "INSERT INTO pais (id_pais, nome, id_bloco) VALUES (%s, %s)",
+                        "INSERT INTO pais (id_pais, nome) VALUES (%s, %s)",
                         (id_pais, nome)
                     )
                 self.conn.commit()
@@ -42,7 +42,7 @@ class BuildDatabase:
                     id_bloco = row["CO_BLOCO"]
                     nome_bloco = row["NO_BLOCO"]
                     cur.execute(
-                        "INSERT INTO bloco (id_bloco, nome) VALUES (%s, %s) ON DUPLICATE KEY UPDATE nome = VALUES(nome)", 
+                        "INSERT INTO bloco (id_bloco, nome_bloco) VALUES (%s, %s) ON DUPLICATE KEY UPDATE nome_bloco = VALUES(nome_bloco)", 
                         (id_bloco, nome_bloco)
                     )
                 for _, row in bloco_df.iterrows():
@@ -106,7 +106,7 @@ class BuildDatabase:
             with self.conn.cursor() as cur:
                 for _, row in via_df.iterrows():
                     id_modal = row['CO_VIA']
-                    descricao = ['NO_VIA']
+                    descricao = row['NO_VIA']
                     cur.execute(
                         "INSERT INTO modal_transporte (id_modal, descricao) VALUES (%s, %s) ON DUPLICATE KEY UPDATE descricao = VALUES(descricao)",
                         (id_modal, descricao)
@@ -122,7 +122,7 @@ class BuildDatabase:
         urf_df = pd.read_csv(self.tabelas.auxiliar('URF'), delimiter=';', encoding='latin1')
         try:
             with self.conn.cursor() as cur:
-                for _, row in urf_df:
+                for _, row in urf_df.iterrows():
                     id_unidade = row['CO_URF']
                     nome = row['NO_URF'].split(' - ')[1]
                     cur.execute(

@@ -1,6 +1,6 @@
 from mysql.connector import connect, Error, MySQLConnection
 
-from database.build_database import BuildDatabase
+from .build_database import BuildDatabase
 from . import config
 from .create_tables_script import create_tables_script
 from app.utils.logging_config import app_logger, error_logger
@@ -50,16 +50,18 @@ def create_tables_if_not_exist() -> None:
     try:
         with conn.cursor() as cur:
             cur.execute(create_tables_script)
-            app_logger.info("Tabelas criadas ou já existentes.")
+            app_logger.info("Tabelas criadas")
+            builder = BuildDatabase(configure)
+            builder.buid_db()
+            builder.close_connection()
     except Error as e:
         conn.rollback()
-        error_logger.error("Erro ao criar tabelas no banco de dados.", e)
+        error_logger.error("Erro ao criar tabelas no banco de dados: %s", str(e))
     finally:
-        if conn:conn.close()
+        if conn.is_connected():
+            conn.close()
 
 
 def init_db():
     create_database_if_not_exists()
     create_tables_if_not_exist()
-    builder = BuildDatabase(configure)
-    builder.buid_db()

@@ -1,4 +1,4 @@
-create_tables_script = '''
+```sql
 CREATE TABLE estado (
     id_estado INT PRIMARY KEY,
     sigla VARCHAR(2) NOT NULL,
@@ -27,22 +27,23 @@ CREATE TABLE pais (
 
 CREATE TABLE unidade_receita_federal (
     id_unidade INT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL
+    nome VARCHAR(100) NOT NULL,
+    localizacao VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE sh2 (
     id_sh2 INT PRIMARY KEY,
-    descricao TEXT NOT NULL
+    descricao VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE sh4 (
     id_sh4 INT PRIMARY KEY,
-    descricao TEXT NOT NULL
+    descricao VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE cgce_n3 (
     id_n3 INT PRIMARY KEY,
-    descricao TEXT NOT NULL
+    descricao VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE modal_transporte (
@@ -52,7 +53,7 @@ CREATE TABLE modal_transporte (
 
 CREATE TABLE produto (
     id_ncm INT PRIMARY KEY,
-    descricao TEXT NOT NULL,
+    descricao VARCHAR(255) NOT NULL,
     id_sh4 INT NOT NULL,
     id_cgce_n3 INT NOT NULL,
     id_sh2 INT NOT NULL,
@@ -85,4 +86,6 @@ CREATE TABLE transacao_comercial (
     FOREIGN KEY (id_estado) REFERENCES estado(id_estado),
     FOREIGN KEY (id_modal) REFERENCES modal_transporte(id_modal)
 );
-'''
+
+
+```
