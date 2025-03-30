@@ -1,3 +1,4 @@
+from typing import Literal
 from mysql.connector import Error, connect
 import pandas as pd
 
@@ -108,12 +109,12 @@ class BuildDatabase:
                     id_modal = row['CO_VIA']
                     descricao = row['NO_VIA']
                     cur.execute(
-                        "INSERT INTO modal_transporte (id_modal, descricao) VALUES (%s, %s) ON DUPLICATE KEY UPDATE descricao = VALUES(descricao)",
+                        "INSERT INTO modal_transporte (id_modal_transporte, descricao) VALUES (%s, %s) ON DUPLICATE KEY UPDATE descricao = VALUES(descricao)",
                         (id_modal, descricao)
                     )
                 self.conn.commit()
                 app_logger.info("Modais de transporte cadastrados no banco de dados com sucesso")
-        except Error as e:
+        except Error as e: 
             self.conn.rollback()
             error_logger.error("Erro ao cadastrar modais de transporte no banco de dados: %s", str(e))
 
@@ -157,7 +158,7 @@ class BuildDatabase:
 
     def registra_sh(self) -> None:
         file_url = 'data_pipeline/tabelas_auxiliares/codigos.csv'
-        sh_df = pd.read_csv(file_url, delimiter=';', encoding='latin1')
+        sh_df = pd.read_csv(file_url, delimiter=';', encoding='utf-8', dtype={'CO_SH4': str, 'CO_SH2': str})
         sh4 = sh_df.drop_duplicates(subset=['CO_SH4'])
         sh2 = sh_df.drop_duplicates(subset=['CO_SH2'])
         try:
@@ -179,16 +180,35 @@ class BuildDatabase:
                     )
 
                 self.conn.commit()
-                app_logger.info("códigos SH2 cadastrados no banco de dados com sucesso")
+                app_logger.info("códigos SH2 e SH4 cadastrados no banco de dados com sucesso")
         except Error as e:
             self.conn.rollback()
-            error_logger.error("Erro ao cadastrar códigos SH2 no banco de dados: %s", str(e))
+            error_logger.error("Erro ao cadastrar códigos SH2 e SH4 no banco de dados: %s", str(e))
 
 
     def registra_produto(self) -> None:
+        ncm_df = pd.read_csv(self.tabelas.auxiliar('NCM'), delimiter=";", encoding="latin1", dtype={'CO_NCM': str})
+        unidades_df = pd.read_csv(self.tabelas.auxiliar('NCM_UNIDADE'), delimiter=";", encoding="latin1")
+        ncm_df = ncm_df.merge(unidades_df[['CO_UNID', 'NO_UNID']], on='CO_UNID', how='left')
+        file_url = 'data_pipeline/tabelas_auxiliares/codigos.csv'
+        sh_df = pd.read_csv(file_url, delimiter=';', encoding='latin1', dtype={'CO_NCM': str, 'CO_SH4': str, 'CO_SH2': str})
+        ncm_df = ncm_df.merge(sh_df[['CO_NCM', 'CO_SH4', 'CO_SH2']], on='CO_NCM', how='left')
+        ncm_df = ncm_df.where(pd.notna(ncm_df), None)
         try:
             with self.conn.cursor() as cur:
-                a = 0
+                for _, row in ncm_df.iterrows():
+                    id_ncm = row['CO_NCM']
+                    descricao = row['NO_NCM_POR']
+                    unidade_medida = row['NO_UNID']
+                    id_sh4 = row['CO_SH4']
+                    id_sh2 = row['CO_SH2']
+                    id_cgce_n3 = int(row['CO_CGCE_N3'])
+                    cur.execute('''
+                        INSERT INTO produto (id_ncm, descricao, unidade_medida, id_sh4, id_cgce_n3, id_sh2) 
+                        VALUES (%s, %s, %s, %s, %s, %s) 
+                        ON DUPLICATE KEY UPDATE descricao = VALUES(descricao), unidade_medida = VALUES(unidade_medida), id_sh4 = VALUES(id_sh4), id_cgce_n3 = VALUES(id_cgce_n3), id_sh2 = VALUES(id_sh2)''',
+                        (id_ncm, descricao, unidade_medida, id_sh4, id_cgce_n3, id_sh2)
+                    )
                 self.conn.commit()
                 app_logger.info("Produtos cadastrados no banco de dados com sucesso")
         except Error as e:
@@ -196,16 +216,103 @@ class BuildDatabase:
             error_logger.error("Erro ao cadastrar produtos no banco de dados: %s", str(e))
 
 
-    def registra_transacao_comercial(self) -> None:
+    def registra_transacao_estado (self, ano:int, tipo:Literal["exp", "imp"]) -> None:
+        if tipo not in ['exp', 'imp']:
+            raise ValueError("O tipo deve ser 'exp' ou 'imp'")
+        transacao_df = pd.read_csv(f'data_pipeline/datasets/limpo/{ano}/{tipo}_{ano}.csv', dtype={'CO_NCM': str})
+        uf_df = pd.read_csv(self.tabelas.auxiliar('UF'), delimiter=';', encoding='latin1')
+        uf_df = uf_df.rename(columns={'SG_UF': 'SG_UF_NCM'})
+        transacao_df = transacao_df.merge(uf_df, on='SG_UF_NCM', how='left')
+        count = 0
         try:
             with self.conn.cursor() as cur:
-                a = 0
+                for _, row in transacao_df.iterrows():
+                    ano = row['CO_ANO']
+                    mes = row['CO_MES']
+                    tipo_transacao = tipo
+                    id_produto = row['CO_NCM']
+                    id_pais = row['CO_PAIS']
+                    id_estado = row['CO_UF']
+                    id_modal_transporte = row['CO_VIA']
+                    id_unidade_receita_federal = row['CO_URF']
+                    quantidade = int(row['QT_ESTAT'])
+                    kg_liquido = row['KG_LIQUIDO']
+                    valor_fob = row['VL_FOB']
+                    valor_agregado = valor_fob/kg_liquido
+                    
+                    if tipo == 'imp':
+                        valor_seguro = row['VL_SEGURO']
+                        valor_frete = row['VL_FRETE']
+                        cur.execute(
+                            '''INSERT INTO importacao_estado (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado) 
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                            (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado)
+                        )
+                    else:
+                        cur.execute(
+                            '''INSERT INTO exportacao_estado (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete) 
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                            (tipo, ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete)
+                        )
+                    count += 1
                 self.conn.commit()
-                app_logger.info("Transações comerciais cadastrados no banco de dados com sucesso")
+                app_logger.info(f"{count} Transações por estado de {tipo}ortação do ano {ano} cadastrados no banco de dados com sucesso")
         except Error as e:
             self.conn.rollback()
-            error_logger.error("Erro ao cadastrar transações comerciais no banco de dados: %s", str(e))
-        return
+            error_logger.error("Erro ao cadastrar transações comerciais por municipio no banco de dados: %s", str(e))
+
+
+    def registra_transacao_municipio(self, ano:int, tipo:Literal["exp", "imp"]) -> None:
+        if tipo not in ['exp', 'imp']:
+            raise ValueError("O tipo deve ser 'exp' ou 'imp'")        
+        transacao_df = pd.read_csv(f'data_pipeline/datasets/limpo/{ano}/{tipo}_{ano}_MUN.csv', dtype={'SH4': str})
+        transacao_df['SH4'] = transacao_df['SH4'].str.strip().str.zfill(4)
+        uf_df = pd.read_csv(self.tabelas.auxiliar('UF'), delimiter=';', encoding='latin1')
+        uf_df = uf_df.rename(columns={'SG_UF': 'SG_UF_MUN'})
+        transacao_df = transacao_df.merge(uf_df, on='SG_UF_MUN', how='left')
+        count = 0
+        try:
+            with self.conn.cursor() as cur:
+                for _, row in transacao_df.iterrows():
+                    ano = row['CO_ANO']
+                    mes = row['CO_MES']
+                    tipo_transacao = tipo
+                    id_sh4 = row['SH4']
+                    id_pais = row['CO_PAIS']
+                    id_municipio = row['CO_MUN']
+                    kg_liquido = row['KG_LIQUIDO']
+                    valor_fob = row['VL_FOB']
+                    valor_agregado = valor_fob/kg_liquido
+                    if tipo == 'exp':
+                        cur.execute(
+                            '''INSERT INTO exportacao_municipio (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado) 
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                            (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado)
+                        )
+                    else:
+                        cur.execute(
+                            '''INSERT INTO importacao_municipio (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado) 
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                            (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado)
+                        )
+                    count += 1
+                self.conn.commit()
+                app_logger.info(f"{count} Transações por município de {tipo}ortação do ano {ano} cadastrados no banco de dados com sucesso")
+        except Error as e:
+            print(id_sh4)
+            self.conn.rollback()
+            error_logger.error("Erro ao cadastrar transações comerciais por municipio no banco de dados: %s", str(e))
+
+
+    def registra_transacoes_estado(self) -> None:
+        for tipo in ('exp', 'imp'):
+            for ano in range(2014, 2025):
+                self.registra_transacao_estado(ano, tipo)
+
+    def registra_transacoes_municipio(self) -> None:
+        for tipo in ('exp', 'imp'):
+            for ano in range(2014, 2025):
+                self.registra_transacao_municipio(ano, tipo)
         
 
     def buid_db(self) -> None:
@@ -218,5 +325,6 @@ class BuildDatabase:
         self.registra_cgce_n3()
         self.registra_sh()
         self.registra_produto()
-        self.registra_transacao_comercial()
+        self.registra_transacoes_estado()
+        self.registra_transacoes_municipio()
         
