@@ -132,10 +132,3 @@ UF_MUN = link_base_aux + "UF_MUN.csv"
 UF = link_base_aux + "UF.csv"
 VIA = link_base_aux + "VIA.csv"
 URF = link_base_aux + "URF.csv"
-
-
-#exempolo de uso:
-# tabelas = TabelasComexStat()
-# exportacao_por_mun_2024 = tabelas.exportacao_mun('2024')
-# exportacao_por_ncm_2024 = tabelas.exportacao_ncm('2024')
-# ncm = tabelas.auxiliar('NCM')

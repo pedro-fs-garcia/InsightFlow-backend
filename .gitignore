@@ -6,6 +6,3 @@ node_modules/
 logs/
 *.log
 test.py
-teste.py
-
-datasets/
