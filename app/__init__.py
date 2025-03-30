@@ -4,8 +4,6 @@ from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 import os
 
-from app.database.database_connection import init_db
-
 load_dotenv()
 
 # Conectar ao Redis
@@ -19,9 +17,6 @@ limiter = Limiter(key_func=get_remote_address,
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.getenv("SECRET_KEY",'sua-chave-secreta')
-    # app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "jwt_secret_key")
-
-    init_db()
 
     limiter.init_app(app)
 
