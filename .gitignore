@@ -3,6 +3,7 @@ venv/
 env/
 node_modules/
 .env
+*.env
 logs/
 *.log
 test.py
