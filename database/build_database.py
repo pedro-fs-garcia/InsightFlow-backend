@@ -219,7 +219,7 @@ class BuildDatabase:
     def registra_transacao_estado (self, ano:int, tipo:Literal["exp", "imp"]) -> None:
         if tipo not in ['exp', 'imp']:
             raise ValueError("O tipo deve ser 'exp' ou 'imp'")
-        transacao_df = pd.read_csv(f'data_pipeline/datasets/limpo/{ano}/{tipo}_{ano}.csv', dtype={'CO_NCM': str})
+        transacao_df = pd.read_csv(f'data_pipeline/datasets/limpo/{ano}/{tipo.upper()}_{ano}.csv', dtype={'CO_NCM': str})
         uf_df = pd.read_csv(self.tabelas.auxiliar('UF'), delimiter=';', encoding='latin1')
         uf_df = uf_df.rename(columns={'SG_UF': 'SG_UF_NCM'})
         transacao_df = transacao_df.merge(uf_df, on='SG_UF_NCM', how='left')
@@ -244,15 +244,15 @@ class BuildDatabase:
                         valor_seguro = row['VL_SEGURO']
                         valor_frete = row['VL_FRETE']
                         cur.execute(
-                            '''INSERT INTO importacao_estado (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado) 
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                            (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado)
+                            '''INSERT INTO importacao_estado (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete) 
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                            (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete)
                         )
                     else:
                         cur.execute(
-                            '''INSERT INTO exportacao_estado (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete) 
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                            (tipo, ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete)
+                            '''INSERT INTO exportacao_estado (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado) 
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                            (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado)
                         )
                     count += 1
                 self.conn.commit()
@@ -265,7 +265,7 @@ class BuildDatabase:
     def registra_transacao_municipio(self, ano:int, tipo:Literal["exp", "imp"]) -> None:
         if tipo not in ['exp', 'imp']:
             raise ValueError("O tipo deve ser 'exp' ou 'imp'")        
-        transacao_df = pd.read_csv(f'data_pipeline/datasets/limpo/{ano}/{tipo}_{ano}_MUN.csv', dtype={'SH4': str})
+        transacao_df = pd.read_csv(f'data_pipeline/datasets/limpo/{ano}/{tipo.upper()}_{ano}_MUN.csv', dtype={'SH4': str})
         transacao_df['SH4'] = transacao_df['SH4'].str.strip().str.zfill(4)
         uf_df = pd.read_csv(self.tabelas.auxiliar('UF'), delimiter=';', encoding='latin1')
         uf_df = uf_df.rename(columns={'SG_UF': 'SG_UF_MUN'})

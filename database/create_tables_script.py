@@ -75,8 +75,6 @@ CREATE TABLE IF NOT EXISTS exportacao_estado (
     valor_fob DECIMAL(15,2),
     kg_liquido DECIMAL(15,2),
     valor_agregado DECIMAL(15,2),
-    valor_seguro DECIMAL(15,2),
-    valor_frete DECIMAL(15,2),
     id_modal_transporte INT,
     FOREIGN KEY (id_modal_transporte) REFERENCES modal_transporte(id_modal_transporte),
     FOREIGN KEY (id_unidade_receita_federal) REFERENCES unidade_receita_federal (id_unidade),
