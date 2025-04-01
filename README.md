@@ -17,8 +17,8 @@ Este Backend é uma REST API implementada em Flask - Python, que fornecerá dado
 </p>
 
 ## Instruções para que o Servidor funcione corretamente
-
-### Preparar o ambiente virtual
+ - Siga os passos a seguir para que o banco de dados seja salvo corretamente e o servidor seja devidamente inicializado
+### 1. Preparar o ambiente virtual
 #### Windows
 ```
 python -m venv venv
@@ -31,9 +31,23 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 ---
-### Instalar as dependências necessárias
+### 2. Instalar as dependências necessárias
 ```
 pip install -r requirements.txt
+```
+
+---
+### 3. Configurar variáveis de ambiente
+crie um arquivo chamado `.env` na raíz do projeto e preencha ou substitua as variáveis a seguir de acordo com o seu ambiente local:
+```
+DB_USER=seu_usuario
+DB_PASSWORD=sua_senha
+DB_HOST=localhost
+DB_NAME=insightflow
+DB_PORT=3306
+
+BACKEND_SERVER=http://localhost:5000
+FRONTEND_SERVER=http://localhost:5173
 ```
 ---
 ### Executar a limpeza dos dados
@@ -48,7 +62,7 @@ python3 tratar_dados.py
 ```
 ---
 
-### Inicializar banco de dados
+### 4. Inicializar banco de dados
 *Essa operação passa todos os dados das tabelas limpas na etapa anterior para o banco de dados (aproximadamente 30 milhões de registros)*  
 
 `Essa operação é lenta e pode levar horas dependendo do processamento do computador`
@@ -56,7 +70,7 @@ python3 tratar_dados.py
 python init_db.py
 ```
 ---
-### Iniciar o servidor Flask
+### 5. Iniciar o servidor Flask
 Windows
 ```
 python run.py
