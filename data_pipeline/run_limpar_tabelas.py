@@ -1,4 +1,4 @@
-from models.limpador_de_tabela import LimpadorDeTabela
+from .models.limpador_de_tabela import LimpadorDeTabela
 import http.client
 
 # limpa_comex_stat.dataframe

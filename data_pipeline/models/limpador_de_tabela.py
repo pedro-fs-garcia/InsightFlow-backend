@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from models.tabelasComexStat import TabelasComexStat
+from .tabelasComexStat import TabelasComexStat
 
 
 class LimpadorDeTabela:
@@ -50,7 +50,7 @@ class LimpadorDeTabela:
         
         print(f'Buscando tabela {self.nome_arquivo}.csv')
 
-        if os.path.exists(f'datasets/limpo/{self.ano}/{self.nome_arquivo}.csv'):
+        if os.path.exists(f'data_pipeline/datasets/limpo/{self.ano}/{self.nome_arquivo}.csv'):
             return False
         
         self.df_raw = pd.read_csv(url, delimiter=';', encoding='latin1')
@@ -260,7 +260,7 @@ class LimpadorDeTabela:
         
         relatorio = pd.DataFrame(list(linhas_invalidas.items()), columns=['Critério', 'Quantidade'])
 
-        output_dir = f'datasets/relatorios/{self.ano}'
+        output_dir = f'data_pipeline/datasets/relatorios/{self.ano}'
         os.makedirs(output_dir, exist_ok=True)
         relatorio_path = f'{output_dir}/{self.nome_arquivo}_rel.csv'
         relatorio.to_csv(relatorio_path, index=False, encoding='latin1')
@@ -274,7 +274,7 @@ class LimpadorDeTabela:
     def salvar_registros_excluidos(self):
         def salvar_tabela(df:pd.DataFrame, nome:str):
             try:
-                output_dir = f'datasets/registros_excluidos/{self.ano}'
+                output_dir = f'data_pipeline/datasets/registros_excluidos/{self.ano}'
                 os.makedirs(output_dir, exist_ok=True)
                 path = f'{output_dir}/{self.tipo}_{self.ano}_{nome}.csv'
                 df.to_csv(path, index=False, encoding='latin1')
@@ -299,7 +299,7 @@ class LimpadorDeTabela:
 
 
     def salvar_tabela_limpa(self):
-        output_dir = f'datasets/limpo/{self.ano}'
+        output_dir = f'data_pipeline/datasets/limpo/{self.ano}'
         os.makedirs(output_dir, exist_ok=True)
         output_path = f'{output_dir}/{self.nome_arquivo}.csv'
         self.df.to_csv(output_path, index=False, encoding='latin1')
