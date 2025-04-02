@@ -139,4 +139,6 @@ CREATE TABLE IF NOT EXISTS exportacao_municipio (
     FOREIGN KEY (id_pais) REFERENCES pais (id_pais),
     FOREIGN KEY (id_municipio) REFERENCES municipio (id_municipio)
 );
+
+CREATE INDEX idx_ano_id_produto ON exportacao_estado(ano, id_produto);
 '''

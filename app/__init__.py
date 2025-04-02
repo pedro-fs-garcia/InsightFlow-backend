@@ -22,5 +22,7 @@ def create_app():
 
     # from .routes.main_routes import main
     # app.register_blueprint(main)
+    from .routes.ncm_routes import ncm
+    app.register_blueprint(ncm)
 
     return app
