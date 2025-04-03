@@ -15,12 +15,12 @@ markdown-it-py==3.0.0
 MarkupSafe==3.0.2
 matplotlib==3.10.1
 mdurl==0.1.2
-mysql-connector-python==9.2.0
 numpy==2.2.3
 ordered-set==4.1.0
 packaging==24.2
 pandas==2.2.3
 pillow==11.1.0
+psycopg2-binary==2.9.10
 Pygments==2.19.1
 pyparsing==3.2.1
 python-dateutil==2.9.0.post0

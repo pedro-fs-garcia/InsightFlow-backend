@@ -54,7 +54,7 @@ def busca_top_ncm():
         return jsonify({'error': f'Erro na requisição: {errors}'}), 400
     
     if qtd is None: args['qtd'] = 10
-    if crit is None: args['crit'] = 'falor_fob'
+    if crit is None: args['crit'] = 'valor_fob'
 
     top_ncm = ncm_dao.busca_top_ncm(**args)
 

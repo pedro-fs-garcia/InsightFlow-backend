@@ -18,7 +18,12 @@ Este Backend é uma REST API implementada em Flask - Python, que fornecerá dado
 
 ## Instruções para que o Servidor funcione corretamente
  - Siga os passos a seguir para que o banco de dados seja salvo corretamente e o servidor seja devidamente inicializado
-### 1. Preparar o ambiente virtual
+---
+### 1️⃣ Instalar e configurar o PostgreSQL
+- Acesse o documento a seguir e siga o passo a passo para a correta instalação:  
+[Passo a passo para instalação](/docs/database/postgresql.md)
+---
+### 2️⃣ Preparar o ambiente virtual
 #### Windows
 ```
 python -m venv venv
@@ -31,26 +36,28 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 ---
-### 2. Instalar as dependências necessárias
+### 3️⃣ Instalar as dependências necessárias
 ```
 pip install -r requirements.txt
 ```
 
 ---
-### 3. Configurar variáveis de ambiente
+### 4️⃣ Configurar variáveis de ambiente
 crie um arquivo chamado `.env` na raíz do projeto e preencha ou substitua as variáveis a seguir de acordo com o seu ambiente local:
 ```
-DB_USER=seu_usuario
-DB_PASSWORD=sua_senha
+DB_USER=postgres
+DB_PASSWORD=postgres
 DB_HOST=localhost
 DB_NAME=insightflow
-DB_PORT=3306
+DB_PORT=5432
 
 BACKEND_SERVER=http://localhost:5000
 FRONTEND_SERVER=http://localhost:5173
 ```
 ---
-### Executar a limpeza dos dados
+### 5️⃣ Executar a limpeza dos dados
+Caso os dados ainda não estejam limpos e salvos localmente em data_pipeline/datasets/limpo, execute o comando abaixo para fazê-lo:
+
 Windows
 ```
 python tratar_dados.py
@@ -62,7 +69,7 @@ python3 tratar_dados.py
 ```
 ---
 
-### 4. Inicializar banco de dados
+### 6. Inicializar banco de dados
 *Essa operação passa todos os dados das tabelas limpas na etapa anterior para o banco de dados (aproximadamente 30 milhões de registros)*  
 
 `Essa operação é lenta e pode levar horas dependendo do processamento do computador`
@@ -70,7 +77,7 @@ python3 tratar_dados.py
 python init_db.py
 ```
 ---
-### 5. Iniciar o servidor Flask
+### 7. Iniciar o servidor Flask
 Windows
 ```
 python run.py
