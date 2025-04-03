@@ -21,7 +21,7 @@ Este Backend é uma REST API implementada em Flask - Python, que fornecerá dado
 ---
 ### 1️⃣ Instalar e configurar o PostgreSQL
 - Acesse o documento a seguir e siga o passo a passo para a correta instalação:  
-[Passo a passo para instalação]()
+[Passo a passo para instalação](/docs/database/postgresql.md)
 ---
 ### 2️⃣ Preparar o ambiente virtual
 #### Windows
