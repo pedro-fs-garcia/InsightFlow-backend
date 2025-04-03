@@ -1,37 +1,43 @@
 create_tables_script = '''
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_transacao_enum') THEN
+        CREATE TYPE tipo_transacao_enum AS ENUM ('exp', 'imp');
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS estado (
-    id_estado INT PRIMARY KEY,
+    id_estado SERIAL PRIMARY KEY,
     sigla VARCHAR(2),
     nome VARCHAR(100),
     regiao VARCHAR(50)
 );
 
 CREATE TABLE IF NOT EXISTS municipio (
-    id_municipio INT PRIMARY KEY,
+    id_municipio SERIAL PRIMARY KEY,
     nome VARCHAR(100),
     id_estado INT,
     FOREIGN KEY (id_estado) REFERENCES estado(id_estado)
 );
 
 CREATE TABLE IF NOT EXISTS bloco (
-    id_bloco INT PRIMARY KEY,
+    id_bloco SERIAL PRIMARY KEY,
     nome_bloco VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS pais (
-    id_pais INT PRIMARY KEY,
+    id_pais SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     id_bloco INT,
     FOREIGN KEY (id_bloco) REFERENCES bloco(id_bloco)
 );
 
 CREATE TABLE IF NOT EXISTS unidade_receita_federal (
-    id_unidade INT PRIMARY KEY,
+    id_unidade SERIAL PRIMARY KEY,
     nome VARCHAR(100)
 );
 
 CREATE TABLE IF NOT EXISTS modal_transporte (
-    id_modal_transporte INT PRIMARY KEY,
+    id_modal_transporte SERIAL PRIMARY KEY,
     descricao VARCHAR(255)
 );
 
@@ -63,10 +69,10 @@ CREATE TABLE IF NOT EXISTS produto (
 );
 
 CREATE TABLE IF NOT EXISTS exportacao_estado (
-    id_transacao INT PRIMARY KEY AUTO_INCREMENT,
+    id_transacao SERIAL PRIMARY KEY,
     ano INT,
     mes INT,
-    tipo_transacao ENUM('exp', 'imp'),
+    tipo_transacao tipo_transacao_enum,
     id_produto INT,
     id_pais INT,
     id_estado INT,
@@ -84,10 +90,10 @@ CREATE TABLE IF NOT EXISTS exportacao_estado (
 );
 
 CREATE TABLE IF NOT EXISTS importacao_estado (
-    id_transacao INT PRIMARY KEY AUTO_INCREMENT,
+    id_transacao SERIAL PRIMARY KEY,
     ano INT,
     mes INT,
-    tipo_transacao ENUM('exp', 'imp'),
+    tipo_transacao tipo_transacao_enum,
     id_produto INT,
     id_pais INT,
     id_estado INT,
@@ -107,10 +113,10 @@ CREATE TABLE IF NOT EXISTS importacao_estado (
 );
 
 CREATE TABLE IF NOT EXISTS importacao_municipio (
-    id_transacao INT PRIMARY KEY AUTO_INCREMENT,
+    id_transacao SERIAL PRIMARY KEY,
     ano INT,
     mes INT,
-    tipo_transacao ENUM('exp', 'imp'),
+    tipo_transacao tipo_transacao_enum,
     id_sh4 VARCHAR(4),
     id_pais INT,
     id_municipio INT,
@@ -125,10 +131,10 @@ CREATE TABLE IF NOT EXISTS importacao_municipio (
 );
 
 CREATE TABLE IF NOT EXISTS exportacao_municipio (
-    id_transacao INT PRIMARY KEY AUTO_INCREMENT,
+    id_transacao SERIAL PRIMARY KEY,
     ano INT,
     mes INT,
-    tipo_transacao ENUM('exp', 'imp'),
+    tipo_transacao tipo_transacao_enum,
     id_sh4 VARCHAR(4),
     id_pais INT,
     id_municipio INT,
@@ -140,5 +146,6 @@ CREATE TABLE IF NOT EXISTS exportacao_municipio (
     FOREIGN KEY (id_municipio) REFERENCES municipio (id_municipio)
 );
 
-CREATE INDEX idx_ano_id_produto ON exportacao_estado(ano, id_produto);
+CREATE INDEX IF NOT EXISTS idx_ano_id_produto ON exportacao_estado(ano, id_produto);
+
 '''
