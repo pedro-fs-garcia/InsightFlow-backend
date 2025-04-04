@@ -1,6 +1,18 @@
 
 
-def build_where(anos=None, meses=None, paises=None, estados=None, vias=None, urfs = None, municipios=None):
+from typing import List
+
+
+def build_where(
+        anos:List[int]=None, 
+        meses:List[int]=None, 
+        paises:List[int]=None, 
+        estados:List[int]=None, 
+        vias:List[int]=None, 
+        urfs:List[int]=None, 
+        municipios:List[int]=None,
+        ncm:List[int]=None,
+) -> str:
     filtros = []
     if anos:
         anos = [str(ano) for ano in anos]
@@ -24,4 +36,9 @@ def build_where(anos=None, meses=None, paises=None, estados=None, vias=None, urf
     if municipios:
         municipios = [str(municipio) for municipio in municipios]
         filtros.append(f"id_municipio IN ({', '.join(municipios)})")
+
+    if ncm:
+        ncm = [str(id) for id in ncm]
+        filtros.append(f"id_produto IN ({', '.join(ncm)})")
+
     return f"WHERE {' AND '.join(filtros)}" if filtros else ""

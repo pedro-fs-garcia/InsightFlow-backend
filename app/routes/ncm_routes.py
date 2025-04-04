@@ -14,7 +14,11 @@ limiter = Limiter(
 )
 
 
-@ncm.route('/busca_top_ncm', methods=['GET'])
+#rotas
+#/ranking_ncm
+#/busca_por_ncm
+
+@ncm.route('/ranking_ncm', methods=['GET'])
 @limiter.limit("10 per minute")
 def busca_top_ncm() -> Response:
     args = routes_utils.get_args(request)

@@ -20,7 +20,7 @@ def get_args(request: Request) -> dict | list:
         "vias": [int],
         "urfs": [int],
 
-        "ncm": int
+        "ncm": [int]
     }
 
     for param, tipo in params.items():

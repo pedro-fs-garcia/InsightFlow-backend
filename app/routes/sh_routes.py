@@ -15,6 +15,9 @@ limiter = Limiter(
 )
 
 
+#rotas
+#/busca_top_sh4_por_mun
+
 @sh.route('/busca_top_sh4_por_mun', methods=["GET"])
 @limiter.limit("10 per minute")
 def busca_top_sh4_por_mun():
