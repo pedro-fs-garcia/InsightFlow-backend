@@ -4,7 +4,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 from ..dao import ncm_dao
-from .routes_utils import get_args
+from . import routes_utils
 
 ncm = Blueprint('ncm', __name__)
 
@@ -16,20 +16,25 @@ limiter = Limiter(
 
 @ncm.route('/busca_top_ncm', methods=['GET'])
 @limiter.limit("10 per minute")
-def busca_top_ncm():
-    args = get_args(request, False)
+def busca_top_ncm() -> Response:
+    args = routes_utils.get_args(request, False)
 
     if not isinstance(args, dict):
         return jsonify({'error': f'Erro na requisição: {args}'}), 400
 
     top_ncm = ncm_dao.busca_top_ncm(**args)
 
-    if top_ncm is not None:
-        response = Response(
-            json.dumps({'resposta': top_ncm}, ensure_ascii=False),  # Garante UTF-8
-            content_type='application/json; charset=utf-8',
-            status=200
-        )
-        return response
+    return routes_utils.return_response(top_ncm)
 
-    return jsonify({'error': 'Ocorreu um erro inesperado ao buscar informações no banco de dados'}), 500
+
+@ncm.route('/busca_por_ncm', methods=["GET"])
+@limiter.limit('10 per minute')
+def busca_por_ncm() -> Response:
+    args = routes_utils.get_args(request)
+
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    ncm_info = ncm_dao.busca_por_ncm(**args)
+
+    return routes_utils.return_response(ncm_info)

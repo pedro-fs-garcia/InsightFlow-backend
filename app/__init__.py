@@ -24,7 +24,8 @@ def create_app():
     # app.register_blueprint(main)
     from .routes.ncm_routes import ncm
     from .routes.sh_routes import sh
-    app.register_blueprint(ncm)
-    app.register_blueprint(sh)
+    blueprints = [ncm, sh]
+    for b in blueprints:
+        app.register_blueprint(b)
 
     return app

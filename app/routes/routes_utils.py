@@ -1,47 +1,64 @@
-from flask import Request
+from typing import List
+from flask import Request, Response, json, jsonify
 
 
-def get_args(request: Request, por_mun:bool) -> dict | list:
+def get_args(request: Request) -> dict | list:
     errors = []
-    args = {
-        "tipo" : request.args.get('tipo', type=str),
-        "qtd" : request.args.get('qtd', type=int),
-        "anos" : request.args.getlist('anos', type=int),
-        "meses" : request.args.getlist('meses', type=int),
-        "paises" : request.args.getlist('paises', type=int),
-        "crit" : request.args.get('crit', type=str)
+    args= {}
+
+    params = {
+        "tipo": str,
+        "qtd": int,
+        "anos": [int],
+        "meses": [int],
+        "paises": [int],
+        "crit": str,
+        
+        "municipios": [int],
+        "estados": [int],
+        "vias": [int],
+        "urfs": [int],
+
+        "ncm": int
     }
 
-    if por_mun:
-        args["municipios"] = request.args.getlist('municipios', type=int)
-    else:
-        args["estados"] = request.args.getlist('estados', type=int)
-        args["vias"] = request.args.getlist('vias', type=int)
-        args["urfs"] = request.args.getlist('urfs', type=int)
-    
-    tipo = args['tipo']
-    if tipo is not None and tipo not in ['exp', 'imp']:
+    for param, tipo in params.items():
+        if isinstance(tipo, list):
+            value = request.args.getlist(param, type=tipo[0])
+        else:
+            value = request.args.get(param, type=tipo)
+        
+        if value:
+            args[param] = value
+
+    if (tipo:= args.get('tipo')) and tipo not in ['exp', 'imp']:
         errors.append("Tipo de transação deve ser 'exp' ou 'imp'.")
 
-    qtd = args['qtd']
-    if qtd is not None and qtd <= 0:
+    if (qtd:= args.get('qtd')) is not None and qtd <= 0:
         errors.append('Quantidade informada deve ser um número inteiro positivo.')
 
-    anos = args.get('anos')
-    for ano in anos:
-        if ano not in range(2014, 2025):
+    for ano in args.get('anos', []):
+        if isinstance(ano, int) and ano not in range(2014, 2025):
             errors.append(f'Ano inválido: {ano}. Utilize um ano entre 2014 e 2024.')
             break
     
-    crit = args.get('crit')
     criterios_validos = {'kg_liquido', 'valor_fob', 'valor_agregado', 'registros'}
-    if crit and crit not in criterios_validos:
+    if (crit:=args.get('crit')) and crit not in criterios_validos:
         errors.append(f"Critério de ordenação inválido. Utilize um dos critérios válidos: {', '.join(criterios_validos)}.")
 
-    if errors:
-        return errors
-    
-    if qtd is None: args['qtd'] = 10
-    if crit is None: args['crit'] = 'valor_fob'
+    if errors: return errors
 
     return args
+
+
+
+def return_response(data: List | List[dict]) -> Response:
+    if data is not None:
+        response = Response(
+            json.dumps({'resposta': data}, ensure_ascii=False),
+            content_type = 'application/json; charset=utf-8',
+            status = 200
+        )
+        return response
+    
+    return jsonify({'error': 'Ocorreu um erro inesperado. Por favor tente novamente mais tarde.'})
