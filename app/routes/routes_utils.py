@@ -13,7 +13,8 @@ def get_args(request: Request) -> dict | list:
         "meses": [int],
         "paises": [int],
         "crit": str,
-        
+        "cresc": int,
+
         "municipios": [int],
         "estados": [int],
         "vias": [int],
@@ -45,6 +46,9 @@ def get_args(request: Request) -> dict | list:
     criterios_validos = {'kg_liquido', 'valor_fob', 'valor_agregado', 'registros'}
     if (crit:=args.get('crit')) and crit not in criterios_validos:
         errors.append(f"Critério de ordenação inválido. Utilize um dos critérios válidos: {', '.join(criterios_validos)}.")
+
+    if (cresc:=args.get('cresc')) and cresc not in (1, 0):
+        errors.append(f"Critério 'cresc' deve ser 1 ou 0.")
 
     if errors: return errors
 

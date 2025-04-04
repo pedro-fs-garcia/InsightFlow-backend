@@ -16,9 +16,9 @@ limiter = Limiter(
 
 
 @sh.route('/busca_top_sh4_por_mun', methods=["GET"])
-@limiter.limit("20 per minute")
+@limiter.limit("10 per minute")
 def busca_top_sh4_por_mun():
-    args = get_args(request, True)
+    args = get_args(request)
 
     if not isinstance(args, dict):
         return jsonify({'error': f'Erro na requisição: {args}'}), 400

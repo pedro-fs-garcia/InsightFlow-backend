@@ -17,7 +17,7 @@ limiter = Limiter(
 @ncm.route('/busca_top_ncm', methods=['GET'])
 @limiter.limit("10 per minute")
 def busca_top_ncm() -> Response:
-    args = routes_utils.get_args(request, False)
+    args = routes_utils.get_args(request)
 
     if not isinstance(args, dict):
         return jsonify({'error': f'Erro na requisição: {args}'}), 400

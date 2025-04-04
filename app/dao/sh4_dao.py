@@ -14,7 +14,8 @@ def busca_top_sh4_por_municipio(
     meses: List[int] | None = None,
     paises: List[int] | None = None,
     municipios: List[int] | None = None,
-    crit: Literal['kg_liquido', 'valor_fob', 'valor_agregado', 'registros'] = 'valor_fob'
+    crit: Literal['kg_liquido', 'valor_fob', 'valor_agregado', 'registros'] = 'valor_fob',
+    cresc: Literal[1, 0] = 0 
 ) -> List[dict] | None:
     try:
         conn = get_connection()
@@ -41,7 +42,7 @@ def busca_top_sh4_por_municipio(
                 {where_statement}
                 GROUP BY {tipo}ortacao_municipio.id_sh4, sh4.descricao
                 {having_statement}
-                ORDER BY total_{crit} DESC
+                ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
                 LIMIT %s
             """
             inicio = time.time()

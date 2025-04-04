@@ -40,7 +40,8 @@ def busca_top_ncm(
         estados: List[int] | None = None,
         vias: List[int] | None = None,
         urfs: List[int] | None = None,
-        crit: Literal['kg_liquido', 'valor_fob', 'valor_agregado', 'registros'] = 'valor_fob'
+        crit: Literal['kg_liquido', 'valor_fob', 'valor_agregado', 'registros'] = 'valor_fob',
+        cresc: Literal[1, 0] = 0
     ) -> List[dict] | None:
     try:
         conn = get_connection()
@@ -69,7 +70,7 @@ def busca_top_ncm(
                 {where_statement}
                 GROUP BY id_produto, produto.descricao, sh4.descricao
                 {having_statement}
-                ORDER BY total_{crit} DESC
+                ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
                 LIMIT %s
             """
             inicio = time.time()
