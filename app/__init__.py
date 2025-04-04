@@ -23,6 +23,8 @@ def create_app():
     # from .routes.main_routes import main
     # app.register_blueprint(main)
     from .routes.ncm_routes import ncm
+    from .routes.sh_routes import sh
     app.register_blueprint(ncm)
+    app.register_blueprint(sh)
 
     return app

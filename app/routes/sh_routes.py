@@ -1,12 +1,13 @@
-
-from flask import Request, Response, json, jsonify, request, Blueprint
+from flask import Blueprint, Response, json, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from ..dao import ncm_dao
+from app.dao import sh4_dao
+
 from .routes_utils import get_args
 
-ncm = Blueprint('ncm', __name__)
+
+sh = Blueprint('sh', __name__)
 
 limiter = Limiter(
     get_remote_address,  # Usa o IP do cliente para limitar requisições
@@ -14,19 +15,19 @@ limiter = Limiter(
 )
 
 
-@ncm.route('/busca_top_ncm', methods=['GET'])
-@limiter.limit("10 per minute")
-def busca_top_ncm():
-    args = get_args(request, False)
+@sh.route('/busca_top_sh4_por_mun', methods=["GET"])
+@limiter.limit("20 per minute")
+def busca_top_sh4_por_mun():
+    args = get_args(request, True)
 
     if not isinstance(args, dict):
         return jsonify({'error': f'Erro na requisição: {args}'}), 400
 
-    top_ncm = ncm_dao.busca_top_ncm(**args)
+    top_sh4 = sh4_dao.busca_top_sh4_por_municipio(**args)
 
-    if top_ncm is not None:
+    if top_sh4 is not None:
         response = Response(
-            json.dumps({'resposta': top_ncm}, ensure_ascii=False),  # Garante UTF-8
+            json.dumps({'resposta': top_sh4}, ensure_ascii=False),  # Garante UTF-8
             content_type='application/json; charset=utf-8',
             status=200
         )
