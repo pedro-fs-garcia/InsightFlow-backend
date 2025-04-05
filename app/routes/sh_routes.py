@@ -5,6 +5,7 @@ from flask_limiter.util import get_remote_address
 from app.dao import sh4_dao
 
 from .routes_utils import get_args
+from app.routes import routes_utils
 
 
 sh = Blueprint('sh', __name__)
@@ -37,3 +38,14 @@ def busca_top_sh4_por_mun():
         return response
 
     return jsonify({'error': 'Ocorreu um erro inesperado ao buscar informações no banco de dados'}), 500
+
+
+@sh.route('/pesquisa_sh4_por_nome', methods=["GET"])
+@limiter.limit("10 per minute")
+def pesquisa_sh4_por_nome():
+    nome = request.args.get('nome')
+    if nome is None:
+        pesquisa = sh4_dao.busca_todos_sh4()
+    else:
+        pesquisa = sh4_dao.pesquisa_sh4_por_nome(nome)
+    return routes_utils.return_response(pesquisa)

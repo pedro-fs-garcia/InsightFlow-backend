@@ -170,6 +170,10 @@ A requisição aceita os seguintes parâmetros via query string:
 | `ncm`       | `list[int]` | Sim       | Lista de ncms a serem buscados. |
 | `anos`      | `list[int]` | Não       | Lista de anos a serem considerados. Valores permitidos: `2014-2024`. |
 | `meses`     | `list[int]` | Não       | Lista de meses a serem considerados (1 a 12). |
+| `paises`    | `list[int]` | Não       | Lista de identificadores de países a serem considerados. |
+| `estados`   | `list[int]` | Não       | Lista de identificadores de estados brasileiros a serem considerados. |
+| `vias`      | `list[int]` | Não       | Lista de identificadores de vias de transporte a serem consideradas. |
+| `urfs`       | `list[int]` | Não       | Lista de identificadores de unidades da receita federal a serem consideradas.  |
 
 **Exemplo de Requisição:**
 ```
@@ -183,6 +187,7 @@ GET /busca_ncm_hist?ncm=12019000&anos=2014&meses=1&meses=2&meses=3&tipo=exp
   "resposta": [
     {
       "ano": 2014,
+      "descricao": "Soja, mesmo triturada, exceto para semeadura",
       "id_ncm": 12019000,
       "mes": 1,
       "total_kg_liquido": "30583565.00",
@@ -192,6 +197,7 @@ GET /busca_ncm_hist?ncm=12019000&anos=2014&meses=1&meses=2&meses=3&tipo=exp
     },
     {
       "ano": 2014,
+      "descricao": "Soja, mesmo triturada, exceto para semeadura",
       "id_ncm": 12019000,
       "mes": 2,
       "total_kg_liquido": "2789537176.00",
@@ -201,6 +207,7 @@ GET /busca_ncm_hist?ncm=12019000&anos=2014&meses=1&meses=2&meses=3&tipo=exp
     },
     {
       "ano": 2014,
+      "descricao": "Soja, mesmo triturada, exceto para semeadura",
       "id_ncm": 12019000,
       "mes": 3,
       "total_kg_liquido": "6226713306.00",
@@ -211,6 +218,51 @@ GET /busca_ncm_hist?ncm=12019000&anos=2014&meses=1&meses=2&meses=3&tipo=exp
   ]
 }
 ```
+
+## GET `/pesquisa_ncm_por_nome`
+**Descrição:**
+Rota de pesquisa por nome do produto. 
+
+**Parâmetros da Requisição:**
+A requisição aceita os seguintes parâmetros via query string:
+| Parâmetro   | Tipo       | Obrigatório | Descrição |
+|-------------|-----------|-------------|-------------|
+| `nome`      | `string`  | Não         | Termo da pesquisa. |
+
+**Exemplo de Requisição:**
+```
+GET /pesquisa_ncm_por_nome?nome=ovos%frescos
+```
+**Respostas:**
+- **200 OK** - Retorna id_ncm e descrição de todos os ncm que possuem `<nome>` em sua descrição.
+```json
+{
+  "resposta": [
+    {
+      "descricao": "Ovos de outras aves, não para incubação ou não frescos",
+      "id_ncm": 4079000
+    },
+    {
+      "descricao": "Ovos frescos de outras aves",
+      "id_ncm": 4072900
+    },
+    {
+      "descricao": "Outros ovos de aves, com casca, frescos, conservados cozidos",
+      "id_ncm": 4070090
+    },
+    {
+      "descricao": "Outros ovos de aves, sem casca, frescos, cozidos em água, etc",
+      "id_ncm": 4089900
+    },
+    {
+      "descricao": "Outros ovos frescos de aves da espécie Gallus domesticus",
+      "id_ncm": 4072100
+    }
+  ]
+}
+```
+**Nota:**
+Se o parâmetro 'nome' não for fornecido, a rota irá retornar todos os ncm em ordem crescente.
 
 
 ## 📍 GET `/busca_top_sh4_por_mun`
@@ -268,7 +320,7 @@ GET /busca_top_sh4_por_mun?tipo=exp&qtd=5&anos=2022&municipios=4314902&crit=valo
 }
 ```
 ---
-### GET `/ranking_pais`
+## GET `/ranking_pais`
  **Descrição:**
  Esta rota permite rankear os países para os quais o Brasil mais exporta ou dos quais o Brasil mais importa com base em critários específicos, como ano, mes, ncm, estado, via e urf. Os resultados podem ser ordenados por kg liquido, valor FOB, valor agregado ou número de registros.
 
@@ -300,7 +352,7 @@ A requisição aceita os seguintes parâmetros via query string:
   "resposta": [
     {
       "id_pais": 160,
-      "pais_nome": "China",
+      "nome_pais": "China",
       "total_kg_liquido": "3626059174576.00",
       "total_registros": 203233,
       "total_valor_agregado": "0.20",
@@ -308,7 +360,7 @@ A requisição aceita os seguintes parâmetros via query string:
     },
     {
       "id_pais": 249,
-      "pais_nome": "Estados Unidos",
+      "nome_pais": "Estados Unidos",
       "total_kg_liquido": "346568159631.00",
       "total_registros": 781777,
       "total_valor_agregado": "0.86",
@@ -317,3 +369,95 @@ A requisição aceita os seguintes parâmetros via query string:
   ]
 }
 ```
+
+
+### GET `/busca_pais_hist`
+ **Descrição:**
+Esta rota permite buscar informações (kg liquido, valor FOB, valor agregado e número de registros) de exportação e importação por país de acordo com critérios específicos, como ano, país, estado e via de transporte.
+
+**Parâmetros da Requisição:**
+A requisição aceita os seguintes parâmetros via query string:
+
+| Parâmetro   | Tipo       | Obrigatório | Descrição |
+|-------------|-----------|-------------|-------------|
+| `tipo`      | `string`  | Sim         | Tipo de transação: `exp` para exportação ou `imp` para importação. |
+| `paises`    | `list[int]` | Sim       | Países cujos históricos serão retornados. É possível buscar mais de um país. |
+| `anos`      | `list[int]` | Não       | Lista de anos a serem considerados. Valores permitidos: `2014-2024`. |
+| `meses`     | `list[int]` | Não       | Lista de meses a serem considerados (1 a 12). |
+| `ncm`       | `list[int]` | Não       | Lista de ncms a serem considerados. |
+| `estados`   | `list[int]` | Não       | Lista de identificadores de estados brasileiros a serem considerados. |
+| `vias`      | `list[int]` | Não       | Lista de identificadores de vias de transporte a serem consideradas. |
+| `urfs`      | `list[int]` | Não       | Lista de identificadores de unidades da receita federal a serem consideradas.  |
+
+**Exemplo de Requisição:**
+```
+GET /busca_pais_hist?tipo=ex&anos=2014&meses=1&meses=2
+```
+
+**Respostas:**
+- **200 OK** - Retorna o histórico dos países ordenados por ano e mês de acordo com os filtros aplicados.
+```json
+{
+  "resposta": [
+    {
+      "ano": 2014,
+      "id_pais": 43,
+      "kg_liquido_total_exp": "481565.00",
+      "mes": 1,
+      "nome_bloco": "América Central e Caribe",
+      "nome_pais": "Antígua e Barbuda",
+      "total_registros": 17,
+      "valor_agregado_total_exp": "1.27",
+      "valor_fob_total_exp": "613477.00"
+    },
+    {
+      "ano": 2014,
+      "id_pais": 43,
+      "kg_liquido_total_exp": "412141.00",
+      "mes": 2,
+      "nome_bloco": "América Central e Caribe",
+      "nome_pais": "Antígua e Barbuda",
+      "total_registros": 14,
+      "valor_agregado_total_exp": "0.89",
+      "valor_fob_total_exp": "368843.00"
+    },
+  ]
+}
+```
+
+## GET `/pesquisa_pais_por_nome`
+**Descrição:**
+Rota de pesquisa por nome do país. 
+
+**Parâmetros da Requisição:**
+A requisição aceita os seguintes parâmetros via query string:
+| Parâmetro   | Tipo       | Obrigatório | Descrição |
+|-------------|-----------|-------------|-------------|
+| `nome`      | `string`  | Não         | Termo da pesquisa. |
+
+**Exemplo de Requisição:**
+```
+GET /pesquisa_pais_por_nome?nome=ind
+```
+**Respostas:**
+- **200 OK** - Retorna id e nome de todos os países que possuem `<nome>` em seu nome.
+```json
+{
+  "resposta": [
+    {
+      "id_pais": 365,
+      "nome": "Indonésia"
+    },
+    {
+      "id_pais": 361,
+      "nome": "Índia"
+    },
+    {
+      "id_pais": 782,
+      "nome": "Território Britânico do Oceano Índico"
+    }
+  ]
+}
+```
+**Nota:**
+Se o parâmetro 'nome' não for fornecido, a rota irá retornar todos os países em ordem alfabética.

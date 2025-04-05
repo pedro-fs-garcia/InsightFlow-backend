@@ -63,15 +63,19 @@ def busca_ncm_hist(
         tipo:Literal['exp', 'imp'], 
         ncm:List[int], 
         anos:List[int] | None = None,
-        meses:List[int] | None = None
+        meses:List[int] | None = None,
+        paises: List[int] | None = None,
+        estados: List[int] | None = None,
+        vias: List[int] | None = None,
+        urfs: List[int] | None = None
     ) -> List[dict]:
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=DictCursor)
 
-        where_statement = build_where(anos=anos, meses=meses, ncm=ncm)
+        where_statement = build_where(anos=anos, meses=meses, paises=paises, estados=estados, vias=vias, urfs=urfs, ncm=ncm)
         query = f"""
-            SELECT produto.id_ncm,
+            SELECT produto.id_ncm, produto.descricao,
                 ano, mes,
                 SUM(valor_fob) as total_valor_fob,
                 SUM(kg_liquido) as total_kg_liquido,
@@ -154,4 +158,47 @@ def busca_top_ncm(
         error_logger.error(f'Erro ao buscar top NCM no banco de dados: {str(e)}')
         return None
     finally:
+        if cur: cur.close()
         if conn:conn.close()
+
+
+def pesquisa_ncm_por_nome(nome:str) -> List[dict] | None:
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=DictCursor)
+        query = """
+            SELECT id_ncm, descricao
+            FROM produto
+            WHERE unaccent(descricao) ILIKE unaccent (%s)
+            ORDER BY
+                CASE
+                    WHEN unaccent(descricao) ILIKE unaccent(%s) THEN 0
+                    ELSE 1
+                END,
+                unaccent(descricao) ASC
+        """
+        cur.execute(query, (f"%{nome}%", f"{nome}%"))
+        response = [dict(row) for row in cur.fetchall()]
+        app_logger.info(f"Pesquisa ncm por nome '{nome}' executada.")
+        return response
+    except Error as e:
+        error_logger.error(f"Erro ao pesquisar ncm pelo nome '{nome}': {str(e)}")
+        return None
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+
+def busca_todos_ncm():
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=DictCursor)
+        cur.execute("SELECT id_ncm, descricao FROM produto ORDER BY id_ncm")
+        return [dict(row) for row in cur.fetchall()]
+    except Error as e:
+        error_logger.error(f"Erro ao buscar todos ncm no banco de dados: {str(e)}")
+        return None
+    finally:
+        if cur:cur.close()
+        if conn:conn.close()
+        

@@ -20,7 +20,7 @@ def busca_top_pais(
         urfs: List[int] | None = None,
         crit: Literal['kg_liquido', 'valor_fob', 'valor_agregado', 'registros'] = 'valor_fob',
         cresc: Literal[1, 0] = 0
-) -> List[dict]:
+) -> List[dict] | None:
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=DictCursor)
@@ -34,7 +34,7 @@ def busca_top_pais(
         
         query = f"""
             SELECT pais.id_pais,
-                pais.nome AS pais_nome,
+                pais.nome AS nome_pais,
                 SUM(valor_fob) as total_valor_fob,
                 SUM(kg_liquido) as total_kg_liquido,
                 CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
@@ -60,3 +60,99 @@ def busca_top_pais(
     finally:
         if cur: cur.close()
         if conn: conn.close()
+
+
+def busca_pais_hist(
+        tipo:Literal['exp', 'imp'],
+        paises: List[int],
+        anos: List[int] | None = None,
+        meses: List[int] | None = None,
+        estados: List[int] | None = None,
+        vias: List[int] | None = None,
+        urfs: List[int] | None = None,
+        ncm: List[int] | None = None,
+) -> List[dict] | None:
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=DictCursor)
+
+        where_statement = build_where(anos=anos, meses=meses, paises=paises, estados=estados, vias=vias, urfs=urfs, ncm=ncm)
+        where_statement = where_statement.replace('id_pais', 'pais.id_pais')
+        if ncm:
+            where_statement += f" AND id_produto IN ({', '.join([str(n) for n in ncm])})"
+
+        query = f"""
+            SELECT pais.id_pais, pais.nome AS nome_pais,
+                ano, mes,
+                bloco.nome_bloco, 
+                SUM(kg_liquido) as kg_liquido_total_{tipo},
+                SUM(valor_fob) as valor_fob_total_{tipo},
+                CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS valor_agregado_total_{tipo},
+                COUNT(*) AS total_registros
+
+            FROM pais
+            LEFT JOIN bloco ON pais.id_bloco = bloco.id_bloco
+            LEFT JOIN {tipo}ortacao_estado ON pais.id_pais = {tipo}ortacao_estado.id_pais
+            {where_statement}
+            GROUP BY pais.id_pais, ano, mes, bloco.nome_bloco
+            ORDER BY ano, mes
+        """
+
+        inicio = time.time()
+        cur.execute(query)
+        results = [dict(row) for row in cur.fetchall()]
+        fim = time.time()
+        tempo = f"Tempo de execução: {fim - inicio:.4f} segundos"
+        app_logger.info(f"Histórico dos países {paises}. {tempo}")
+        return results
+
+    except Error as e:
+        error_logger.error(f"Erro ao buscar o histórico de países no banco de dados: {str(e)}")
+        return None
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+
+def pesquisa_pais_por_nome(nome:str) -> List[dict] | None:
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=DictCursor)
+        query = """
+            SELECT id_pais, nome FROM pais
+            WHERE unaccent(nome) ILIKE unaccent(%s)
+            ORDER BY 
+                CASE 
+                    WHEN nome ILIKE %s THEN 0
+                    ELSE 1
+                END,
+                unaccent(nome) ASC
+        """
+        cur.execute(query, (f"%{nome}%", f"{nome}%"))
+        
+        results = [dict(row) for row in cur.fetchall()]
+        app_logger.info(f"pesquisa por paises com '{nome}' realizada.")
+        return results
+
+    except Error as e:
+        error_logger.error(f"Erro ao pesquisar países por nome no banco de dados: {str(e)}")
+        return None
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+
+
+def busca_todos_paises():
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=DictCursor)
+        cur.execute("SELECT id_pais, nome FROM pais ORDER BY nome ASC")
+        results = [dict(row) for row in cur.fetchall()]
+        app_logger.info("Todos os países buscados com sucesso.")
+        return results
+    except Error as e:
+        error_logger.error("Erro ao buscar todos os países.")
+        return None
+    finally:
+        if cur:cur.close()
+        if conn:conn.close()

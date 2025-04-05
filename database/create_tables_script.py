@@ -147,5 +147,6 @@ CREATE TABLE IF NOT EXISTS exportacao_municipio (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ano_id_produto ON exportacao_estado(ano, id_produto);
+CREATE EXTENSION IF NOT EXISTS unaccent;
 
 '''

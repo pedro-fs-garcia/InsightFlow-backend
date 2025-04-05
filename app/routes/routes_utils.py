@@ -65,4 +65,4 @@ def return_response(data: List | List[dict]) -> Response:
         )
         return response
     
-    return jsonify({'error': 'Ocorreu um erro inesperado. Por favor tente novamente mais tarde.'})
+    return jsonify({'error': 'Ocorreu um erro inesperado. Por favor tente novamente mais tarde.'}), 500
