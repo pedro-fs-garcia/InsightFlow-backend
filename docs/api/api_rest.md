@@ -264,6 +264,38 @@ GET /pesquisa_ncm_por_nome?nome=ovos%frescos
 **Nota:**
 Se o parâmetro 'nome' não for fornecido, a rota irá retornar todos os ncm em ordem crescente.
 
+---
+
+## GET `/pesquisa_sh4_por_nome`
+**Descrição:**
+Rota de pesquisa por nome do sh4. 
+**Parâmetros da Requisição:**
+A requisição aceita os seguintes parâmetros via query string:
+| Parâmetro   | Tipo       | Obrigatório | Descrição |
+|-------------|-----------|-------------|-------------|
+| `nome`      | `string`  | Não         | Termo da pesquisa. |
+
+**Exemplo de Requisição:**
+```
+GET /pesquisa_sh4_por_nome?nome=ovos%de%aves
+```
+**Respostas:**
+- **200 OK** - Retorna id_sh4 e descrição de todos os sh4 que possuem `<nome>` em sua descrição.
+```json
+{
+  "resposta": [
+    {
+      "descricao": "Ovos de aves, com casca, frescos, conservados ou cozidos",
+      "id_sh4": "0407"
+    },
+    {
+      "descricao": "Ovos de aves, sem casca, e gemas de ovos, frescos, secos, cozidos em água ou vapor, moldados, congelados ou conservados de outro modo, mesmo adicionados de açúcar ou de outros edulcorantes",
+      "id_sh4": "0408"
+    }
+  ]
+}
+```
+---
 
 ## 📍 GET `/busca_top_sh4_por_mun`
 
