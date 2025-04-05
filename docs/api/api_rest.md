@@ -109,6 +109,110 @@ GET /ranking_ncm?tipo=exp&qtd=10&anos=2020&anos=2021&anos=2022&meses=1&meses=2&c
 Essa rota é útil para análises de mercado e acompanhamento do fluxo de importação e exportação de produtos brasileiros.
 
 ---
+
+## GET `/busca_por_ncm`
+**Descrição:**
+Esta rota permite buscar informações (kg liquido, valor FOB, valor agregado e número de registros) de exportação e importação por ncm de acordo com critérios específicos, como ano, país, estado e via de transporte.
+
+**Parâmetros da Requisição:**
+A requisição aceita os seguintes parâmetros via query string:
+
+| Parâmetro   | Tipo       | Obrigatório | Descrição |
+|-------------|-----------|-------------|-------------|
+| `ncm`       | `list[int]` | Sim       | Lista de ncms a serem buscados. |
+| `anos`      | `list[int]` | Não       | Lista de anos a serem considerados. Valores permitidos: `2014-2024`. |
+| `meses`     | `list[int]` | Não       | Lista de meses a serem considerados (1 a 12). |
+| `paises`    | `list[int]` | Não       | Lista de identificadores de países a serem considerados. |
+| `estados`   | `list[int]` | Não       | Lista de identificadores de estados brasileiros a serem considerados. |
+| `vias`      | `list[int]` | Não       | Lista de identificadores de vias de transporte a serem consideradas. |
+| `urfs`       | `list[int]` | Não       | Lista de identificadores de unidades da receita federal a serem consideradas.  |
+
+**Exemplo de Requisição:**
+```
+GET /busca_por_ncm?ncm=12019000anos=2020&anos=2021&anos=2022&meses=1&meses=2
+```
+
+**Respostas:**
+
+- **200 OK** - Retorna as informações sobre os ncm requisitados de arcordo com os critérios escolhidos.
+```json
+{
+  "resposta": [
+    {
+      "produto_descricao": "Soja, mesmo triturada, exceto para semeadura",
+      "sh4_descricao": "Soja, mesmo triturada",
+      "total_kg_liquido_exp": "301588837680.00",
+      "total_kg_liquido_imp": null,
+      "total_valor_agregado_exp": "0.40",
+      "total_valor_agregado_imp": null,
+      "total_valor_fob_exp": "121798388937.00",
+      "total_valor_fob_imp": null
+    }
+  ]
+}
+```
+**Notas:**
+- É possível acessar as informações de mais de um ncm. Nesse caso, os critérios se mantêm os mesmos para todos os ncm requisitados.
+
+---
+
+## GET `/busca_ncm_hist`
+
+**Descrição:**
+Esta rota permite buscar o histórico de dados de exportação ou importação para os ncm escolhidos discriminados por mês e ano.
+
+**Parâmetros da Requisição:**
+A requisição aceita os seguintes parâmetros via query string:
+
+| Parâmetro   | Tipo       | Obrigatório | Descrição |
+|-------------|-----------|-------------|-------------|
+| `tipo`      | `string`  | Sim         | Tipo de transação: `exp` para exportação ou `imp` para importação. |
+| `ncm`       | `list[int]` | Sim       | Lista de ncms a serem buscados. |
+| `anos`      | `list[int]` | Não       | Lista de anos a serem considerados. Valores permitidos: `2014-2024`. |
+| `meses`     | `list[int]` | Não       | Lista de meses a serem considerados (1 a 12). |
+
+**Exemplo de Requisição:**
+```
+GET /busca_ncm_hist?ncm=12019000&anos=2014&meses=1&meses=2&meses=3&tipo=exp
+```
+**Respostas:**
+
+- **200 OK** - Retorna os NCMs mais exportados ou importados conforme os filtros aplicados.
+```json
+{
+  "resposta": [
+    {
+      "ano": 2014,
+      "id_ncm": 12019000,
+      "mes": 1,
+      "total_kg_liquido": "30583565.00",
+      "total_registros": 13,
+      "total_valor_agregado": "0.58",
+      "total_valor_fob": "17787707.00"
+    },
+    {
+      "ano": 2014,
+      "id_ncm": 12019000,
+      "mes": 2,
+      "total_kg_liquido": "2789537176.00",
+      "total_registros": 78,
+      "total_valor_agregado": "0.50",
+      "total_valor_fob": "1385781145.00"
+    },
+    {
+      "ano": 2014,
+      "id_ncm": 12019000,
+      "mes": 3,
+      "total_kg_liquido": "6226713306.00",
+      "total_registros": 135,
+      "total_valor_agregado": "0.51",
+      "total_valor_fob": "3146413552.00"
+    }
+  ]
+}
+```
+
+
 ## 📍 GET `/busca_top_sh4_por_mun`
 
 **Descrição**

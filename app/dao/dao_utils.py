@@ -39,6 +39,6 @@ def build_where(
 
     if ncm:
         ncm = [str(id) for id in ncm]
-        filtros.append(f"id_produto IN ({', '.join(ncm)})")
+        filtros.append(f"produto.id_ncm IN ({', '.join(ncm)})")
 
     return f"WHERE {' AND '.join(filtros)}" if filtros else ""

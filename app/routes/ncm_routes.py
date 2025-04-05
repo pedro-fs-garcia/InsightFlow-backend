@@ -42,3 +42,16 @@ def busca_por_ncm() -> Response:
     ncm_info = ncm_dao.busca_por_ncm(**args)
 
     return routes_utils.return_response(ncm_info)
+
+
+@ncm.route('/busca_ncm_hist', methods=["GET"])
+@limiter.limit('10 per minute')
+def busca_ncm_hist() -> Response:
+    args = routes_utils.get_args(request)
+
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    ncm_hist = ncm_dao.busca_ncm_hist(**args)
+
+    return routes_utils.return_response(ncm_hist)
