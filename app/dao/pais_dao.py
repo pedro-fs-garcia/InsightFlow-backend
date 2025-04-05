@@ -26,10 +26,11 @@ def busca_top_pais(
         cur = conn.cursor(cursor_factory=DictCursor)
 
         where_statement = build_where(anos=anos, meses=meses, estados=estados, vias=vias,urfs=urfs)
-        if where_statement.startswith('WHERE'):
-            where_statement += f" AND id_produto IN ({', '.join([str(n) for n in ncm])})"
-        else:
-            where_statement = f"WHERE id_produto IN ({', '.join([str(n) for n in ncm])})"
+        if ncm:
+            if where_statement.startswith('WHERE'):
+                where_statement += f" AND id_produto IN ({', '.join([str(n) for n in ncm])})"
+            else:
+                where_statement = f"WHERE id_produto IN ({', '.join([str(n) for n in ncm])})"
         
         query = f"""
             SELECT pais.id_pais,
