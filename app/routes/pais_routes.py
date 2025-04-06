@@ -8,7 +8,7 @@ from .routes_utils import get_args
 from app.routes import routes_utils
 
 
-pais = Blueprint('pais', __name__)
+pais_bp = Blueprint('pais', __name__)
 
 limiter = Limiter(
     get_remote_address,  # Usa o IP do cliente para limitar requisições
@@ -21,7 +21,7 @@ limiter = Limiter(
 # /busca_pais_hist
 #/busca_pais_por_nome
 
-@pais.route('/ranking_pais', methods = ["GET"])
+@pais_bp.route('/ranking_pais', methods = ["GET"])
 @limiter.limit("10 per minute")
 def busca_top_paises():
     args = get_args(request)
@@ -36,7 +36,7 @@ def busca_top_paises():
     return routes_utils.return_response(ranking_pais)
 
 
-@pais.route('/busca_pais_hist', methods=["GET"])
+@pais_bp.route('/busca_pais_hist', methods=["GET"])
 @limiter.limit('10 per minute')
 def busca_pais_hist():
     args = get_args(request)
@@ -52,7 +52,7 @@ def busca_pais_hist():
     return routes_utils.return_response(pais_hist)
 
 
-@pais.route('/pesquisa_pais_por_nome', methods=["GET"])
+@pais_bp.route('/pesquisa_pais_por_nome', methods=["GET"])
 @limiter.limit('10 per minute')
 def pesquisa_pais():
     nome = request.args.get('nome')

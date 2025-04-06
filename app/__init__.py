@@ -20,12 +20,11 @@ def create_app():
 
     limiter.init_app(app)
 
-    # from .routes.main_routes import main
-    # app.register_blueprint(main)
-    from .routes.ncm_routes import ncm
-    from .routes.sh_routes import sh
-    from .routes.pais_routes import pais
-    blueprints = [ncm, sh, pais]
+    from .routes.ncm_routes import ncm_bp
+    from .routes.sh_routes import sh_bp
+    from .routes.pais_routes import pais_bp
+    from .routes.bloco_routes import bloco_bp
+    blueprints = [ncm_bp, sh_bp, pais_bp, bloco_bp]
     for b in blueprints:
         app.register_blueprint(b)
 

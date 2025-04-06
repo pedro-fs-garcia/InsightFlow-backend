@@ -8,7 +8,7 @@ from .routes_utils import get_args
 from app.routes import routes_utils
 
 
-sh = Blueprint('sh', __name__)
+sh_bp = Blueprint('sh', __name__)
 
 limiter = Limiter(
     get_remote_address,  # Usa o IP do cliente para limitar requisições
@@ -19,7 +19,7 @@ limiter = Limiter(
 #rotas
 #/busca_top_sh4_por_mun
 
-@sh.route('/busca_top_sh4_por_mun', methods=["GET"])
+@sh_bp.route('/busca_top_sh4_por_mun', methods=["GET"])
 @limiter.limit("10 per minute")
 def busca_top_sh4_por_mun():
     args = get_args(request)
@@ -40,7 +40,7 @@ def busca_top_sh4_por_mun():
     return jsonify({'error': 'Ocorreu um erro inesperado ao buscar informações no banco de dados'}), 500
 
 
-@sh.route('/pesquisa_sh4_por_nome', methods=["GET"])
+@sh_bp.route('/pesquisa_sh4_por_nome', methods=["GET"])
 @limiter.limit("10 per minute")
 def pesquisa_sh4_por_nome():
     nome = request.args.get('nome')

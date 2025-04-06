@@ -7,7 +7,7 @@ from . import routes_utils
 from ..dao import ncm_dao
 from ..utils.logging_config import error_logger, app_logger
 
-ncm = Blueprint('ncm', __name__)
+ncm_bp = Blueprint('ncm', __name__)
 
 limiter = Limiter(
     get_remote_address,  # Usa o IP do cliente para limitar requisições
@@ -21,7 +21,7 @@ limiter = Limiter(
 #/busca_ncm_hist
 #/busca_ncm_por_nome
 
-@ncm.route('/ranking_ncm', methods=['GET'])
+@ncm_bp.route('/ranking_ncm', methods=['GET'])
 @limiter.limit("10 per minute")
 def busca_top_ncm() -> Response:
     args = routes_utils.get_args(request)
@@ -40,7 +40,7 @@ def busca_top_ncm() -> Response:
         return jsonify({'error': f'Argumento inesperado na requisição: {str(e)[str(e).index("'"):]}'}), 400
 
 
-@ncm.route('/busca_por_ncm', methods=["GET"])
+@ncm_bp.route('/busca_por_ncm', methods=["GET"])
 @limiter.limit('10 per minute')
 def busca_por_ncm() -> Response:
     args = routes_utils.get_args(request)
@@ -59,7 +59,7 @@ def busca_por_ncm() -> Response:
         return jsonify({'error': f'Argumento inesperado na requisição: {str(e)[str(e).index("'"):]}'}), 400
 
 
-@ncm.route('/busca_ncm_hist', methods=["GET"])
+@ncm_bp.route('/busca_ncm_hist', methods=["GET"])
 @limiter.limit('10 per minute')
 def busca_ncm_hist() -> Response:
     args = routes_utils.get_args(request)
@@ -79,7 +79,7 @@ def busca_ncm_hist() -> Response:
         return jsonify({'error': f'Argumento inesperado na requisição: {str(e)[str(e).index("'"):]}'}), 400
     
 
-@ncm.route("/pesquisa_ncm_por_nome", methods=["GET"])
+@ncm_bp.route("/pesquisa_ncm_por_nome", methods=["GET"])
 @limiter.limit('10 per minute')
 def pesquisa_ncm_por_nome():
     nome = request.args.get('nome')
