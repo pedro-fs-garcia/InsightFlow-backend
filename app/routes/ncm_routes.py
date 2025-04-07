@@ -37,7 +37,7 @@ def busca_top_ncm() -> Response:
         return routes_utils.return_response(top_ncm)
     except TypeError as e:
         error_logger.error(str(e))
-        return jsonify({'error': f'Argumento inesperado na requisição: {str(e)[str(e).index("'"):]}'}), 400
+        return jsonify({'error': f'Argumento inesperado na requisição: {str(e)}'}), 400
 
 
 @ncm_bp.route('/busca_por_ncm', methods=["GET"])
@@ -56,7 +56,7 @@ def busca_por_ncm() -> Response:
         return routes_utils.return_response(ncm_info)
     except TypeError as e:
         error_logger.error(str(e))
-        return jsonify({'error': f'Argumento inesperado na requisição: {str(e)[str(e).index("'"):]}'}), 400
+        return jsonify({'error': f'Argumento inesperado na requisição: {str(e)}'}), 400
 
 
 @ncm_bp.route('/busca_ncm_hist', methods=["GET"])
@@ -76,7 +76,7 @@ def busca_ncm_hist() -> Response:
         return routes_utils.return_response(ncm_hist)
     except TypeError as e:
         error_logger.error(str(e))
-        return jsonify({'error': f'Argumento inesperado na requisição: {str(e)[str(e).index("'"):]}'}), 400
+        return jsonify({'error': f'Argumento inesperado na requisição: {str(e)}'}), 400
     
 
 @ncm_bp.route("/pesquisa_ncm_por_nome", methods=["GET"])

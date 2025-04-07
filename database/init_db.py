@@ -53,27 +53,40 @@ def create_tables_if_not_exist():
         return
     try:
         with conn.cursor() as cur:
-            # First check if the primary key exists
+            # First check if the table exists
             cur.execute("""
-                SELECT 1 FROM pg_constraint 
-                WHERE conname = 'exportacao_estado_pkey' 
-                AND conrelid = 'exportacao_estado'::regclass
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'exportacao_estado'
+                );
             """)
-            pk_exists = cur.fetchone() is not None
+            table_exists = cur.fetchone()[0]
             
-            if not pk_exists:
-                # If primary key doesn't exist, execute the full script
+            if not table_exists:
+                # If table doesn't exist, execute the full script
                 cur.execute(create_tables_script)
             else:
-                # If primary key exists, execute the script without the ALTER TABLE statements
-                script_without_pk = create_tables_script.replace(
-                    "ALTER TABLE exportacao_estado ADD PRIMARY KEY (id_transacao, ano);",
-                    ""
-                ).replace(
-                    "ALTER TABLE importacao_estado ADD PRIMARY KEY (id_transacao, ano);",
-                    ""
-                )
-                cur.execute(script_without_pk)
+                # If table exists, check for primary key
+                cur.execute("""
+                    SELECT 1 FROM pg_constraint 
+                    WHERE conname = 'exportacao_estado_pkey' 
+                    AND conrelid = 'exportacao_estado'::regclass
+                """)
+                pk_exists = cur.fetchone() is not None
+                
+                if not pk_exists:
+                    # If primary key doesn't exist, execute the full script
+                    cur.execute(create_tables_script)
+                else:
+                    # If primary key exists, execute the script without the ALTER TABLE statements
+                    script_without_pk = create_tables_script.replace(
+                        "ALTER TABLE exportacao_estado ADD PRIMARY KEY (id_transacao, ano);",
+                        ""
+                    ).replace(
+                        "ALTER TABLE importacao_estado ADD PRIMARY KEY (id_transacao, ano);",
+                        ""
+                    )
+                    cur.execute(script_without_pk)
             
             conn.commit()
             app_logger.info("Tabelas criadas ou atualizadas com sucesso.")

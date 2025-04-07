@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS importacao_estado (
 -- Adicionar a chave primária na tabela particionada
 ALTER TABLE importacao_estado ADD PRIMARY KEY (id_transacao, ano);
 
--- Criar partições para os últimos 5 anos
+-- Criar partições para os anos
 DO $$
 DECLARE
     ano_atual INT := EXTRACT(YEAR FROM CURRENT_DATE);

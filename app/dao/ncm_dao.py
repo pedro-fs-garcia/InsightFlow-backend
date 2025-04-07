@@ -167,7 +167,12 @@ def busca_top_ncm(
                     JOIN produto ON produto.id_ncm = mv_{tipo}ortacao_estado_anual.id_produto
                     JOIN sh4 ON produto.id_sh4 = sh4.id_sh4 
                     {where_statement}
-                    GROUP BY mv_{tipo}ortacao_estado_anual.id_produto, produto.descricao, sh4.descricao
+                    GROUP BY mv_{tipo}ortacao_estado_anual.id_produto, 
+                        produto.descricao, 
+                        sh4.descricao,
+                        mv_{tipo}ortacao_estado_anual.valor_fob_total,
+                        mv_{tipo}ortacao_estado_anual.kg_liquido_total,
+                        mv_{tipo}ortacao_estado_anual.quantidade_total
                     ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
                     LIMIT %s
                 """
