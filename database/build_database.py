@@ -258,15 +258,15 @@ class BuildDatabase:
                     valor_seguro = row['VL_SEGURO']
                     valor_frete = row['VL_FRETE']
                     cur.execute(
-                        '''INSERT INTO importacao_estado (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                        (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete)
+                        '''INSERT INTO importacao_estado (ano, mes, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                        (ano, mes, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete)
                     )
                 else:
                     cur.execute(
-                        '''INSERT INTO exportacao_estado (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                        (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado)
+                        '''INSERT INTO exportacao_estado (ano, mes, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                        (ano, mes, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado)
                     )
                 count += 1
             self.conn.commit()
@@ -300,15 +300,15 @@ class BuildDatabase:
                 valor_agregado = valor_fob/kg_liquido
                 if tipo == 'exp':
                     cur.execute(
-                        '''INSERT INTO exportacao_municipio (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                        (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado)
+                        '''INSERT INTO exportacao_municipio (ano, mes, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)''',
+                        (ano, mes, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado)
                     )
                 else:
                     cur.execute(
-                        '''INSERT INTO importacao_municipio (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                        (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado)
+                        '''INSERT INTO importacao_municipio (ano, mes, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)''',
+                        (ano, mes, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado)
                     )
                 count += 1
             self.conn.commit()

@@ -81,7 +81,7 @@ A requisição aceita os seguintes parâmetros via query string:
 
 **Exemplo de Requisição:**
 ```
-GET /busca_por_ncm?ncm=12019000anos=2020&anos=2021&anos=2022&meses=1&meses=2
+GET /busca_por_ncm?ncm=12019000&anos=2020&anos=2021&anos=2022&meses=1&meses=2
 ```
 
 **Respostas:**

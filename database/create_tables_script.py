@@ -72,7 +72,6 @@ CREATE TABLE IF NOT EXISTS exportacao_estado (
     id_transacao SERIAL,
     ano INT,
     mes INT,
-    tipo_transacao tipo_transacao_enum,
     id_produto INT,
     id_pais INT,
     id_estado INT,
@@ -96,7 +95,6 @@ CREATE TABLE IF NOT EXISTS importacao_estado (
     id_transacao SERIAL,
     ano INT,
     mes INT,
-    tipo_transacao tipo_transacao_enum,
     id_produto INT,
     id_pais INT,
     id_estado INT,
@@ -141,7 +139,6 @@ CREATE TABLE IF NOT EXISTS importacao_municipio (
     id_transacao SERIAL PRIMARY KEY,
     ano INT,
     mes INT,
-    tipo_transacao tipo_transacao_enum,
     id_sh4 VARCHAR(4),
     id_pais INT,
     id_municipio INT,
@@ -159,7 +156,6 @@ CREATE TABLE IF NOT EXISTS exportacao_municipio (
     id_transacao SERIAL PRIMARY KEY,
     ano INT,
     mes INT,
-    tipo_transacao tipo_transacao_enum,
     id_sh4 VARCHAR(4),
     id_pais INT,
     id_municipio INT,
@@ -191,18 +187,20 @@ SELECT
     ano,
     id_estado,
     id_produto,
+    id_pais,
     SUM(quantidade) as quantidade_total,
     SUM(valor_fob) as valor_fob_total,
     SUM(kg_liquido) as kg_liquido_total,
     SUM(valor_agregado) as valor_agregado_total
 FROM exportacao_estado
-GROUP BY ano, id_estado, id_produto;
+GROUP BY ano, id_estado, id_produto, id_pais;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_importacao_estado_anual AS
 SELECT 
     ano,
     id_estado,
     id_produto,
+    id_pais,
     SUM(quantidade) as quantidade_total,
     SUM(valor_fob) as valor_fob_total,
     SUM(kg_liquido) as kg_liquido_total,
@@ -210,11 +208,11 @@ SELECT
     SUM(valor_seguro) as valor_seguro_total,
     SUM(valor_frete) as valor_frete_total
 FROM importacao_estado
-GROUP BY ano, id_estado, id_produto;
+GROUP BY ano, id_estado, id_produto, id_pais;
 
 -- Índices para as views materializadas
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_exportacao_estado_anual ON mv_exportacao_estado_anual(ano, id_estado, id_produto);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_importacao_estado_anual ON mv_importacao_estado_anual(ano, id_estado, id_produto);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_exportacao_estado_anual ON mv_exportacao_estado_anual(ano, id_estado, id_produto, id_pais);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_importacao_estado_anual ON mv_importacao_estado_anual(ano, id_estado, id_produto, id_pais);
 
 -- Função para atualizar as views materializadas
 CREATE OR REPLACE FUNCTION atualizar_views_materializadas()

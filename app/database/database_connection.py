@@ -1,5 +1,7 @@
+from contextlib import contextmanager
+from typing import Generator
 from psycopg2.pool import SimpleConnectionPool
-from psycopg2.extensions import connection
+from psycopg2.extensions import connection as _connection
 from psycopg2 import OperationalError
 
 from .. import config
@@ -28,13 +30,18 @@ except OperationalError as e:
     pool = None
 
 
-def get_connection() -> connection | None:
+@contextmanager
+def get_connection() -> Generator[_connection, None, None]:
     """Obtém uma conexão do pool."""
-    if pool:
-        try:
-            connection = pool.getconn()
-            app_logger.info(f"Conexão obtida do pool para o banco {configure.get('dbname')}")
-            return connection
-        except OperationalError as e:
-            error_logger.error(f"Erro ao obter conexão do pool: {e}")
-    return None
+    conn = None
+    try:
+        conn = pool.getconn()
+        app_logger.info(f"Conexão obtida do pool para o banco {configure.get('dbname')}")
+        yield conn
+    except OperationalError as e:
+        error_logger.error(f"Erro ao obter conexão do pool: {e}")
+        raise  # ← Propaga o erro para ser tratado no `try` de quem chamou
+    finally:
+        if conn:
+            pool.putconn(conn)
+            app_logger.info("Conexão devolvida ao pool.")
