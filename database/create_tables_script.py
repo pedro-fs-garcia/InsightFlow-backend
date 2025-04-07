@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS produto (
 );
 
 CREATE TABLE IF NOT EXISTS exportacao_estado (
-    id_transacao SERIAL PRIMARY KEY,
+    id_transacao SERIAL,
     ano INT,
     mes INT,
     tipo_transacao tipo_transacao_enum,
@@ -87,10 +87,13 @@ CREATE TABLE IF NOT EXISTS exportacao_estado (
     FOREIGN KEY (id_produto) REFERENCES produto (id_ncm),
     FOREIGN KEY (id_pais) REFERENCES pais (id_pais),
     FOREIGN KEY (id_estado) REFERENCES estado (id_estado)
-);
+) PARTITION BY RANGE (ano);
+
+-- Adicionar a chave primária na tabela particionada
+ALTER TABLE exportacao_estado ADD PRIMARY KEY (id_transacao, ano);
 
 CREATE TABLE IF NOT EXISTS importacao_estado (
-    id_transacao SERIAL PRIMARY KEY,
+    id_transacao SERIAL,
     ano INT,
     mes INT,
     tipo_transacao tipo_transacao_enum,
@@ -110,7 +113,29 @@ CREATE TABLE IF NOT EXISTS importacao_estado (
     FOREIGN KEY (id_produto) REFERENCES produto (id_ncm),
     FOREIGN KEY (id_pais) REFERENCES pais (id_pais),
     FOREIGN KEY (id_estado) REFERENCES estado (id_estado)
-);
+) PARTITION BY RANGE (ano);
+
+-- Adicionar a chave primária na tabela particionada
+ALTER TABLE importacao_estado ADD PRIMARY KEY (id_transacao, ano);
+
+-- Criar partições para os últimos 5 anos
+DO $$
+DECLARE
+    ano_atual INT := EXTRACT(YEAR FROM CURRENT_DATE);
+    ano_inicio INT := 2014;
+BEGIN
+    FOR ano IN ano_inicio..ano_atual LOOP
+        EXECUTE format('
+            CREATE TABLE IF NOT EXISTS exportacao_estado_%s PARTITION OF exportacao_estado
+            FOR VALUES FROM (%s) TO (%s);
+        ', ano, ano, ano + 1);
+        
+        EXECUTE format('
+            CREATE TABLE IF NOT EXISTS importacao_estado_%s PARTITION OF importacao_estado
+            FOR VALUES FROM (%s) TO (%s);
+        ', ano, ano, ano + 1);
+    END LOOP;
+END $$;
 
 CREATE TABLE IF NOT EXISTS importacao_municipio (
     id_transacao SERIAL PRIMARY KEY,
@@ -147,6 +172,56 @@ CREATE TABLE IF NOT EXISTS exportacao_municipio (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ano_id_produto ON exportacao_estado(ano, id_produto);
+CREATE INDEX IF NOT EXISTS idx_ano_mes_estado ON exportacao_estado(ano, mes, id_estado);
+CREATE INDEX IF NOT EXISTS idx_ano_mes_pais ON exportacao_estado(ano, mes, id_pais);
+CREATE INDEX IF NOT EXISTS idx_ano_mes_estado_imp ON importacao_estado(ano, mes, id_estado);
+CREATE INDEX IF NOT EXISTS idx_ano_mes_pais_imp ON importacao_estado(ano, mes, id_pais);
+CREATE INDEX IF NOT EXISTS idx_ano_mes_municipio_exp ON exportacao_municipio(ano, mes, id_municipio);
+CREATE INDEX IF NOT EXISTS idx_ano_mes_municipio_imp ON importacao_municipio(ano, mes, id_municipio);
+CREATE INDEX IF NOT EXISTS idx_produto_sh4 ON produto(id_sh4);
+CREATE INDEX IF NOT EXISTS idx_produto_sh2 ON produto(id_sh2);
+CREATE INDEX IF NOT EXISTS idx_municipio_estado ON municipio(id_estado);
+CREATE INDEX IF NOT EXISTS idx_pais_bloco ON pais(id_bloco);
+
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
+-- Views Materializadas para consultas comuns
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_exportacao_estado_anual AS
+SELECT 
+    ano,
+    id_estado,
+    id_produto,
+    SUM(quantidade) as quantidade_total,
+    SUM(valor_fob) as valor_fob_total,
+    SUM(kg_liquido) as kg_liquido_total,
+    SUM(valor_agregado) as valor_agregado_total
+FROM exportacao_estado
+GROUP BY ano, id_estado, id_produto;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_importacao_estado_anual AS
+SELECT 
+    ano,
+    id_estado,
+    id_produto,
+    SUM(quantidade) as quantidade_total,
+    SUM(valor_fob) as valor_fob_total,
+    SUM(kg_liquido) as kg_liquido_total,
+    SUM(valor_agregado) as valor_agregado_total,
+    SUM(valor_seguro) as valor_seguro_total,
+    SUM(valor_frete) as valor_frete_total
+FROM importacao_estado
+GROUP BY ano, id_estado, id_produto;
+
+-- Índices para as views materializadas
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_exportacao_estado_anual ON mv_exportacao_estado_anual(ano, id_estado, id_produto);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_importacao_estado_anual ON mv_importacao_estado_anual(ano, id_estado, id_produto);
+
+-- Função para atualizar as views materializadas
+CREATE OR REPLACE FUNCTION atualizar_views_materializadas()
+RETURNS void AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_exportacao_estado_anual;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_importacao_estado_anual;
+END;
+$$ LANGUAGE plpgsql;
 '''

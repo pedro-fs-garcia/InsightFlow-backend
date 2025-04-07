@@ -274,7 +274,7 @@ class BuildDatabase:
             app_logger.info(f"{count} Transações por estado de {tipo}ortação do ano {ano} cadastrados no banco de dados com sucesso")
         except Error as e:
             self.conn.rollback()
-            error_logger.error("Erro ao cadastrar transações comerciais por municipio no banco de dados: %s", str(e))
+            error_logger.error("Erro ao cadastrar transações comerciais por estado no banco de dados para o ano %s: %s", ano, str(e))
 
 
     def registra_transacao_municipio(self, ano:int, tipo:Literal["exp", "imp"]) -> None:
