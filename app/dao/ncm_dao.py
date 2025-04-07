@@ -28,15 +28,15 @@ def busca_por_ncm(
                     query = f"""
                         SELECT produto.descricao AS produto_descricao,
                             sh4.descricao AS sh4_descricao,
-                            mv_exportacao_estado_anual.valor_fob_total AS total_valor_fob_exp,
-                            mv_exportacao_estado_anual.kg_liquido_total AS total_kg_liquido_exp,
-                            CAST(mv_exportacao_estado_anual.valor_fob_total/NULLIF(mv_exportacao_estado_anual.kg_liquido_total, 0) AS DECIMAL(15,2)) AS total_valor_agregado_exp,
+                            SUM(mv_exportacao_estado_anual.valor_fob_total) AS total_valor_fob_exp,
+                            SUM(mv_exportacao_estado_anual.kg_liquido_total) AS total_kg_liquido_exp,
+                            CAST(SUM(mv_exportacao_estado_anual.valor_fob_total)/NULLIF(SUM(mv_exportacao_estado_anual.kg_liquido_total), 0) AS DECIMAL(15,2)) AS total_valor_agregado_exp,
                             
-                            mv_importacao_estado_anual.valor_fob_total AS total_valor_fob_imp,
-                            mv_importacao_estado_anual.kg_liquido_total AS total_kg_liquido_imp,
-                            mv_importacao_estado_anual.valor_seguro_total AS total_valor_seguro_imp,
-                            mv_importacao_estado_anual.valor_frete_total AS total_valor_frete_imp,
-                            CAST(mv_importacao_estado_anual.valor_fob_total/NULLIF(mv_importacao_estado_anual.kg_liquido_total, 0) AS DECIMAL(15,2)) AS total_valor_agregado_imp            
+                            SUM(mv_importacao_estado_anual.valor_fob_total) AS total_valor_fob_imp,
+                            SUM(mv_importacao_estado_anual.kg_liquido_total) AS total_kg_liquido_imp,
+                            SUM(mv_importacao_estado_anual.valor_seguro_total) AS total_valor_seguro_imp,
+                            SUM(mv_importacao_estado_anual.valor_frete_total) AS total_valor_frete_imp,
+                            CAST(SUM(mv_importacao_estado_anual.valor_fob_total)/NULLIF(SUM(mv_importacao_estado_anual.kg_liquido_total), 0) AS DECIMAL(15,2)) AS total_valor_agregado_imp            
                         FROM produto 
                         LEFT JOIN mv_exportacao_estado_anual ON mv_exportacao_estado_anual.id_produto = produto.id_ncm
                         LEFT JOIN mv_importacao_estado_anual ON mv_importacao_estado_anual.id_produto = produto.id_ncm
@@ -157,23 +157,21 @@ def busca_top_ncm(
                         SELECT mv_{tipo}ortacao_estado_anual.id_produto AS ncm, 
                             produto.descricao AS produto_descricao,
                             sh4.descricao AS sh4_descricao,
-                            mv_{tipo}ortacao_estado_anual.valor_fob_total as total_valor_fob,
-                            mv_{tipo}ortacao_estado_anual.kg_liquido_total as total_kg_liquido,
-                            CAST(mv_{tipo}ortacao_estado_anual.valor_fob_total/NULLIF(mv_{tipo}ortacao_estado_anual.kg_liquido_total, 0) AS DECIMAL(15,2)) AS total_valor_agregado,
-                            mv_{tipo}ortacao_estado_anual.quantidade_total AS total_registros
+                            SUM(mv_{tipo}ortacao_estado_anual.valor_fob_total) as total_valor_fob,
+                            SUM(mv_{tipo}ortacao_estado_anual.kg_liquido_total) as total_kg_liquido,
+                            CAST(SUM(mv_{tipo}ortacao_estado_anual.valor_fob_total)/NULLIF(SUM(mv_{tipo}ortacao_estado_anual.kg_liquido_total), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
+                            SUM(mv_{tipo}ortacao_estado_anual.quantidade_total) AS total_registros
                         FROM mv_{tipo}ortacao_estado_anual
                         JOIN produto ON produto.id_ncm = mv_{tipo}ortacao_estado_anual.id_produto
                         JOIN sh4 ON produto.id_sh4 = sh4.id_sh4 
                         {where_statement}
                         GROUP BY mv_{tipo}ortacao_estado_anual.id_produto, 
                             produto.descricao, 
-                            sh4.descricao,
-                            mv_{tipo}ortacao_estado_anual.valor_fob_total,
-                            mv_{tipo}ortacao_estado_anual.kg_liquido_total,
-                            mv_{tipo}ortacao_estado_anual.quantidade_total
+                            sh4.descricao
                         ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
                         LIMIT %s
                     """
+                    print(query)
                 else:
                     # Usar a tabela original se houver filtro por mês
                     if 'ano' in where_statement:

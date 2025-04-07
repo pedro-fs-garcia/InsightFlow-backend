@@ -37,10 +37,10 @@ def busca_top_bloco(
                     # Se não houver filtro por mês, usar a view materializada
                     query = f"""
                         SELECT bloco.id_bloco, bloco.nome_bloco,
-                            mv_{tipo}ortacao_estado_anual.valor_fob_total as total_valor_fob,
-                            mv_{tipo}ortacao_estado_anual.kg_liquido_total as total_kg_liquido,
-                            CAST(mv_{tipo}ortacao_estado_anual.valor_fob_total/NULLIF(mv_{tipo}ortacao_estado_anual.kg_liquido_total, 0) AS DECIMAL(15,2)) AS total_valor_agregado,
-                            mv_{tipo}ortacao_estado_anual.quantidade_total AS total_registros
+                            SUM(mv_{tipo}ortacao_estado_anual.valor_fob_total) as total_valor_fob,
+                            SUM(mv_{tipo}ortacao_estado_anual.kg_liquido_total) as total_kg_liquido,
+                            CAST(SUM(mv_{tipo}ortacao_estado_anual.valor_fob_total)/NULLIF(SUM(mv_{tipo}ortacao_estado_anual.kg_liquido_total), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
+                            SUM(mv_{tipo}ortacao_estado_anual.quantidade_total) AS total_registros
                         FROM pais
                         JOIN bloco ON pais.id_bloco = bloco.id_bloco
                         JOIN mv_{tipo}ortacao_estado_anual ON mv_{tipo}ortacao_estado_anual.id_pais = pais.id_pais
