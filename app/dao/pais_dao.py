@@ -25,27 +25,46 @@ def busca_top_pais(
         conn = get_connection()
         cur = conn.cursor(cursor_factory=DictCursor)
 
-        where_statement = build_where(anos=anos, meses=meses, estados=estados, vias=vias,urfs=urfs)
+        where_statement = build_where(anos=anos, estados=estados, meses=meses, vias=vias, urfs=urfs)
         if ncm:
             if where_statement.startswith('WHERE'):
                 where_statement += f" AND id_produto IN ({', '.join([str(n) for n in ncm])})"
             else:
                 where_statement = f"WHERE id_produto IN ({', '.join([str(n) for n in ncm])})"
-        
-        query = f"""
-            SELECT pais.id_pais,
-                pais.nome AS nome_pais,
-                SUM(valor_fob) as total_valor_fob,
-                SUM(kg_liquido) as total_kg_liquido,
-                CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
-                COUNT(*) AS total_registros
-            FROM {tipo}ortacao_estado 
-            JOIN pais ON {tipo}ortacao_estado.id_pais = pais.id_pais
-            {where_statement}
-            GROUP BY pais.id_pais, pais.nome
-            ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
-            LIMIT %s
-        """
+
+        # Se não houver filtro por mês, usar a view materializada
+        if not meses:
+            
+            query = f"""
+                SELECT pais.id_pais,
+                    pais.nome AS nome_pais,
+                    mv_{tipo}ortacao_estado_anual.valor_fob_total as total_valor_fob,
+                    mv_{tipo}ortacao_estado_anual.kg_liquido_total as total_kg_liquido,
+                    CAST(mv_{tipo}ortacao_estado_anual.valor_fob_total/NULLIF(mv_{tipo}ortacao_estado_anual.kg_liquido_total, 0) AS DECIMAL(15,2)) AS total_valor_agregado,
+                    mv_{tipo}ortacao_estado_anual.quantidade_total AS total_registros
+                FROM pais
+                JOIN mv_{tipo}ortacao_estado_anual ON mv_{tipo}ortacao_estado_anual.id_pais = pais.id_pais
+                {where_statement}
+                GROUP BY pais.id_pais, pais.nome
+                ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
+                LIMIT %s
+            """
+        else:
+            # Usar a tabela original se houver filtro por mês
+            query = f"""
+                SELECT pais.id_pais,
+                    pais.nome AS nome_pais,
+                    SUM(valor_fob) as total_valor_fob,
+                    SUM(kg_liquido) as total_kg_liquido,
+                    CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
+                    COUNT(*) AS total_registros
+                FROM {tipo}ortacao_estado 
+                JOIN pais ON {tipo}ortacao_estado.id_pais = pais.id_pais
+                {where_statement}
+                GROUP BY pais.id_pais, pais.nome
+                ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
+                LIMIT %s
+            """
         inicio = time.time()
         cur.execute(query, (qtd,))
         results = [dict(row) for row in cur.fetchall()]

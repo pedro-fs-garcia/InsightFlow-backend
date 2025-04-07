@@ -20,28 +20,55 @@ def busca_por_ncm(
         cur = conn.cursor(cursor_factory=DictCursor)
 
         where_statement = build_where(anos=anos, meses=meses, paises=paises, vias=vias, urfs=urfs, ncm=ncm)
-        if 'ano' in where_statement:
-            where_statement = where_statement.replace('ano', 'exportacao_estado.ano')
         
-        query = f"""
-            SELECT produto.descricao AS produto_descricao,
-                sh4.descricao AS sh4_descricao,
-                SUM(exportacao_estado.valor_fob) AS total_valor_fob_exp,
-                SUM(exportacao_estado.kg_liquido) AS total_kg_liquido_exp,
-                CAST(SUM(exportacao_estado.valor_fob)/NULLIF(SUM(exportacao_estado.kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado_exp,
-                
-                SUM(importacao_estado.valor_fob) AS total_valor_fob_imp,
-                SUM(importacao_estado.kg_liquido) AS total_kg_liquido_imp,
-                SUM(importacao_estado.valor_seguro) AS total_valor_seguro_imp,
-                SUM(importacao_estado.valor_frete) AS total_valor_frete_imp,
-                CAST(SUM(importacao_estado.valor_fob)/NULLIF(SUM(importacao_estado.kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado_imp            
-            FROM produto 
-            LEFT JOIN exportacao_estado ON exportacao_estado.id_produto = produto.id_ncm
-            LEFT JOIN importacao_estado ON importacao_estado.id_produto = produto.id_ncm
-            JOIN sh4 ON sh4.id_sh4 = produto.id_sh4
-            {where_statement}
-            GROUP BY produto.id_ncm, sh4.id_sh4
-        """
+        # Se não houver filtro por mês, usar a view materializada
+        if not meses:
+            if 'ano' in where_statement:
+                where_statement = where_statement.replace('ano', 'mv_exportacao_estado_anual.ano')
+            
+            query = f"""
+                SELECT produto.descricao AS produto_descricao,
+                    sh4.descricao AS sh4_descricao,
+                    mv_exportacao_estado_anual.valor_fob_total AS total_valor_fob_exp,
+                    mv_exportacao_estado_anual.kg_liquido_total AS total_kg_liquido_exp,
+                    CAST(mv_exportacao_estado_anual.valor_fob_total/NULLIF(mv_exportacao_estado_anual.kg_liquido_total, 0) AS DECIMAL(15,2)) AS total_valor_agregado_exp,
+                    
+                    mv_importacao_estado_anual.valor_fob_total AS total_valor_fob_imp,
+                    mv_importacao_estado_anual.kg_liquido_total AS total_kg_liquido_imp,
+                    mv_importacao_estado_anual.valor_seguro_total AS total_valor_seguro_imp,
+                    mv_importacao_estado_anual.valor_frete_total AS total_valor_frete_imp,
+                    CAST(mv_importacao_estado_anual.valor_fob_total/NULLIF(mv_importacao_estado_anual.kg_liquido_total, 0) AS DECIMAL(15,2)) AS total_valor_agregado_imp            
+                FROM produto 
+                LEFT JOIN mv_exportacao_estado_anual ON mv_exportacao_estado_anual.id_produto = produto.id_ncm
+                LEFT JOIN mv_importacao_estado_anual ON mv_importacao_estado_anual.id_produto = produto.id_ncm
+                JOIN sh4 ON sh4.id_sh4 = produto.id_sh4
+                {where_statement}
+                GROUP BY produto.id_ncm, sh4.id_sh4
+            """
+        else:
+            # Usar a tabela original se houver filtro por mês
+            if 'ano' in where_statement:
+                where_statement = where_statement.replace('ano', 'exportacao_estado.ano')
+            
+            query = f"""
+                SELECT produto.descricao AS produto_descricao,
+                    sh4.descricao AS sh4_descricao,
+                    SUM(exportacao_estado.valor_fob) AS total_valor_fob_exp,
+                    SUM(exportacao_estado.kg_liquido) AS total_kg_liquido_exp,
+                    CAST(SUM(exportacao_estado.valor_fob)/NULLIF(SUM(exportacao_estado.kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado_exp,
+                    
+                    SUM(importacao_estado.valor_fob) AS total_valor_fob_imp,
+                    SUM(importacao_estado.kg_liquido) AS total_kg_liquido_imp,
+                    SUM(importacao_estado.valor_seguro) AS total_valor_seguro_imp,
+                    SUM(importacao_estado.valor_frete) AS total_valor_frete_imp,
+                    CAST(SUM(importacao_estado.valor_fob)/NULLIF(SUM(importacao_estado.kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado_imp            
+                FROM produto 
+                LEFT JOIN exportacao_estado ON exportacao_estado.id_produto = produto.id_ncm
+                LEFT JOIN importacao_estado ON importacao_estado.id_produto = produto.id_ncm
+                JOIN sh4 ON sh4.id_sh4 = produto.id_sh4
+                {where_statement}
+                GROUP BY produto.id_ncm, sh4.id_sh4
+            """
         inicio = time.time()
         cur.execute(query)  
         results = [dict(row)for row in cur.fetchall()]
@@ -120,32 +147,51 @@ def busca_top_ncm(
         conn = get_connection()
         with conn.cursor(cursor_factory=DictCursor) as cur:
             app_logger.info("Busca por top NCM iniciada.")
-            where_statement = build_where(anos=anos, meses=meses, paises=paises, estados=estados, vias=vias, urfs=urfs)
 
-            if crit == 'registros':
-                having_statement = ""
-            elif crit == 'valor_agregado':
-                having_statement = "HAVING SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) IS NOT NULL"
-            else:
-                having_statement = f"HAVING SUM({crit}) > 0"
+            where_statement = build_where(anos=anos, meses=meses, paises=paises, estados=estados, vias=vias, urfs=urfs)
             
-            query = f"""
-                SELECT id_produto AS ncm, 
-                    produto.descricao AS produto_descricao,
-                    sh4.descricao AS sh4_descricao,
-                    SUM(valor_fob) as total_valor_fob,
-                    SUM(kg_liquido) as total_kg_liquido,
-                    CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
-                    COUNT(*) AS total_registros
-                FROM {tipo}ortacao_estado
-                JOIN produto ON produto.id_ncm = {tipo}ortacao_estado.id_produto
-                JOIN sh4 ON produto.id_sh4 = sh4.id_sh4 
-                {where_statement}
-                GROUP BY id_produto, produto.descricao, sh4.descricao
-                {having_statement}
-                ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
-                LIMIT %s
-            """
+            # Se não houver filtro por mês, usar a view materializada
+            if not meses:
+                if 'ano' in where_statement:
+                    where_statement = where_statement.replace('ano', f'mv_{tipo}ortacao_estado_anual.ano')
+                
+                query = f"""
+                    SELECT mv_{tipo}ortacao_estado_anual.id_produto AS ncm, 
+                        produto.descricao AS produto_descricao,
+                        sh4.descricao AS sh4_descricao,
+                        mv_{tipo}ortacao_estado_anual.valor_fob_total as total_valor_fob,
+                        mv_{tipo}ortacao_estado_anual.kg_liquido_total as total_kg_liquido,
+                        CAST(mv_{tipo}ortacao_estado_anual.valor_fob_total/NULLIF(mv_{tipo}ortacao_estado_anual.kg_liquido_total, 0) AS DECIMAL(15,2)) AS total_valor_agregado,
+                        mv_{tipo}ortacao_estado_anual.quantidade_total AS total_registros
+                    FROM mv_{tipo}ortacao_estado_anual
+                    JOIN produto ON produto.id_ncm = mv_{tipo}ortacao_estado_anual.id_produto
+                    JOIN sh4 ON produto.id_sh4 = sh4.id_sh4 
+                    {where_statement}
+                    GROUP BY mv_{tipo}ortacao_estado_anual.id_produto, produto.descricao, sh4.descricao
+                    ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
+                    LIMIT %s
+                """
+            else:
+                # Usar a tabela original se houver filtro por mês
+                if 'ano' in where_statement:
+                    where_statement = where_statement.replace('ano', f'{tipo}ortacao_estado.ano')
+                
+                query = f"""
+                    SELECT id_produto AS ncm, 
+                        produto.descricao AS produto_descricao,
+                        sh4.descricao AS sh4_descricao,
+                        SUM(valor_fob) as total_valor_fob,
+                        SUM(kg_liquido) as total_kg_liquido,
+                        CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
+                        COUNT(*) AS total_registros
+                    FROM {tipo}ortacao_estado
+                    JOIN produto ON produto.id_ncm = {tipo}ortacao_estado.id_produto
+                    JOIN sh4 ON produto.id_sh4 = sh4.id_sh4 
+                    {where_statement}
+                    GROUP BY id_produto, produto.descricao, sh4.descricao
+                    ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
+                    LIMIT %s
+                """
             inicio = time.time()
             cur.execute(query, (qtd,))
             results = [dict(row)for row in cur.fetchall()]
