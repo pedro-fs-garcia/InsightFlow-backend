@@ -9,40 +9,34 @@ from app.utils.logging_config import app_logger, error_logger
 
 def busca_todos_sh4() -> List[dict] | None:
     try:
-        conn = get_connection()
-        cur = conn.cursor(cursor_factory=DictCursor)
-        cur.execute("SELECT sh4.id_sh4, sh4.descricao FROM sh4 ORDER BY id_sh4")
-        return [dict(row) for row in cur.fetchall()]
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=DictCursor)as cur:
+                cur.execute("SELECT sh4.id_sh4, sh4.descricao FROM sh4 ORDER BY id_sh4")
+                return [dict(row) for row in cur.fetchall()]
     except Error as e:
         error_logger.error(f'Erro ao buscar todos sh4 no banco de dados: {str(e)}')
         return None    
-    finally:
-        if cur: cur.close()
-        if conn:conn.close()
 
 
 def pesquisa_sh4_por_nome(nome:str) -> List[dict] | None:
     try:
-        conn = get_connection()
-        cur = conn.cursor(cursor_factory=DictCursor)
-        query = """
-            SELECT id_sh4, descricao FROM sh4
-            WHERE unaccent(descricao) ILIKE unaccent(%s)
-            ORDER BY
-                CASE
-                    WHEN unaccent(descricao) ILIKE unaccent(%s) THEN 0
-                    ELSE 1
-                END,
-                unaccent(descricao) ASC
-        """
-        cur.execute(query, (f"%{nome}%", f"{nome}%"))
-        return [dict(row) for row in cur.fetchall()]
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=DictCursor)as cur:
+                query = """
+                    SELECT id_sh4, descricao FROM sh4
+                    WHERE unaccent(descricao) ILIKE unaccent(%s)
+                    ORDER BY
+                        CASE
+                            WHEN unaccent(descricao) ILIKE unaccent(%s) THEN 0
+                            ELSE 1
+                        END,
+                        unaccent(descricao) ASC
+                """
+                cur.execute(query, (f"%{nome}%", f"{nome}%"))
+                return [dict(row) for row in cur.fetchall()]
     except Error as e:
         error_logger.error(f'Erro ao buscar todos sh4 no banco de dados: {str(e)}')
         return None    
-    finally:
-        if cur: cur.close()
-        if conn:conn.close()
 
 
 def busca_top_sh4_por_municipio(
@@ -56,44 +50,41 @@ def busca_top_sh4_por_municipio(
     cresc: Literal[1, 0] = 0 
 ) -> List[dict] | None:
     try:
-        conn = get_connection()
-        with conn.cursor(cursor_factory=DictCursor) as cur:
-            app_logger.info("Busca por top NCM iniciada.")
-            where_statement = build_where(anos=anos, meses=meses, paises=paises, municipios=municipios)
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                app_logger.info("Busca por top NCM iniciada.")
+                where_statement = build_where(anos=anos, meses=meses, paises=paises, municipios=municipios)
 
-            if crit == 'registros':
-                having_statement = ""
-            elif crit == 'valor_agregado':
-                having_statement = "HAVING SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) IS NOT NULL"
-            else:
-                having_statement = f"HAVING SUM({crit}) > 0"
-            
-            query = f"""
-                SELECT {tipo}ortacao_municipio.id_sh4 AS sh4, 
-                    sh4.descricao AS sh4_descricao,
-                    SUM(valor_fob) as total_valor_fob,
-                    SUM(kg_liquido) as total_kg_liquido,
-                    CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
-                    COUNT(*) AS total_registros
-                FROM {tipo}ortacao_municipio
-                JOIN sh4 ON {tipo}ortacao_municipio.id_sh4 = sh4.id_sh4 
-                {where_statement}
-                GROUP BY {tipo}ortacao_municipio.id_sh4, sh4.descricao
-                {having_statement}
-                ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
-                LIMIT %s
-            """
-            inicio = time.time()
-            cur.execute(query, (qtd,))
-            results = [dict(row)for row in cur.fetchall()]
-            fim = time.time()
-            tempo = f"Tempo de execução: {fim - inicio:.4f} segundos"
-            app_logger.info(f"Top {qtd} NCM mais {tipo}ortados para os anos {anos} classificados por {crit}. {tempo}")
-        return results
+                if crit == 'registros':
+                    having_statement = ""
+                elif crit == 'valor_agregado':
+                    having_statement = "HAVING SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) IS NOT NULL"
+                else:
+                    having_statement = f"HAVING SUM({crit}) > 0"
+                
+                query = f"""
+                    SELECT {tipo}ortacao_municipio.id_sh4 AS sh4, 
+                        sh4.descricao AS sh4_descricao,
+                        SUM(valor_fob) as total_valor_fob,
+                        SUM(kg_liquido) as total_kg_liquido,
+                        CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
+                        COUNT(*) AS total_registros
+                    FROM {tipo}ortacao_municipio
+                    JOIN sh4 ON {tipo}ortacao_municipio.id_sh4 = sh4.id_sh4 
+                    {where_statement}
+                    GROUP BY {tipo}ortacao_municipio.id_sh4, sh4.descricao
+                    {having_statement}
+                    ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
+                    LIMIT %s
+                """
+                inicio = time.time()
+                cur.execute(query, (qtd,))
+                results = [dict(row)for row in cur.fetchall()]
+                fim = time.time()
+                tempo = f"Tempo de execução: {fim - inicio:.4f} segundos"
+                app_logger.info(f"Top {qtd} NCM mais {tipo}ortados para os anos {anos} classificados por {crit}. {tempo}")
+            return results
 
     except Error as e:
         error_logger.error(f'Erro ao buscar top sh4 por município no banco de dados: {str(e)}')
         return None    
-    finally:
-        if cur: cur.close()
-        if conn:conn.close()

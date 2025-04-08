@@ -258,15 +258,15 @@ class BuildDatabase:
                     valor_seguro = row['VL_SEGURO']
                     valor_frete = row['VL_FRETE']
                     cur.execute(
-                        '''INSERT INTO importacao_estado (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                        (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete)
+                        '''INSERT INTO importacao_estado (ano, mes, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                        (ano, mes, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado, valor_seguro, valor_frete)
                     )
                 else:
                     cur.execute(
-                        '''INSERT INTO exportacao_estado (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                        (ano, mes, tipo_transacao, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado)
+                        '''INSERT INTO exportacao_estado (ano, mes, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                        (ano, mes, id_produto, id_pais, id_estado, id_modal_transporte, id_unidade_receita_federal, quantidade, kg_liquido, valor_fob, valor_agregado)
                     )
                 count += 1
             self.conn.commit()
@@ -274,7 +274,7 @@ class BuildDatabase:
             app_logger.info(f"{count} Transações por estado de {tipo}ortação do ano {ano} cadastrados no banco de dados com sucesso")
         except Error as e:
             self.conn.rollback()
-            error_logger.error("Erro ao cadastrar transações comerciais por municipio no banco de dados: %s", str(e))
+            error_logger.error("Erro ao cadastrar transações comerciais por estado no banco de dados para o ano %s: %s", ano, str(e))
 
 
     def registra_transacao_municipio(self, ano:int, tipo:Literal["exp", "imp"]) -> None:
@@ -300,15 +300,15 @@ class BuildDatabase:
                 valor_agregado = valor_fob/kg_liquido
                 if tipo == 'exp':
                     cur.execute(
-                        '''INSERT INTO exportacao_municipio (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                        (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado)
+                        '''INSERT INTO exportacao_municipio (ano, mes, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)''',
+                        (ano, mes, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado)
                     )
                 else:
                     cur.execute(
-                        '''INSERT INTO importacao_municipio (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                        (ano, mes, tipo_transacao, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado)
+                        '''INSERT INTO importacao_municipio (ano, mes, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)''',
+                        (ano, mes, id_sh4, id_pais, id_municipio, kg_liquido, valor_fob, valor_agregado)
                     )
                 count += 1
             self.conn.commit()
@@ -323,13 +323,56 @@ class BuildDatabase:
     def registra_transacoes_estado(self) -> None:
         for tipo in ('exp', 'imp'):
             for ano in range(2014, 2025):
-                self.registra_transacao_estado(ano, tipo)
+                try:
+                    cur = self.conn.cursor()
+                    cur.execute(f"SELECT COUNT(*) FROM {tipo}ortacao_estado WHERE ano = {ano}")
+                    res = cur.fetchone()[0]
+                    print(res)
+                    if res > 0:
+                        app_logger.info(f"Transações de {tipo}ortação para o ano de {ano} já está cadastradas.")
+                        continue
+                    else:
+                        self.registra_transacao_estado(ano, tipo)
+                        self.atualizar_views_materializadas()
+                except Error as e:
+                    error_logger.error(f"Erro ao verificar existência de registros para o ano de {ano}: {str(e)}")
+                    self.conn.rollback()
+                finally:
+                    if cur:cur.close()
+
 
     def registra_transacoes_municipio(self) -> None:
         for tipo in ('exp', 'imp'):
             for ano in range(2014, 2025):
-                self.registra_transacao_municipio(ano, tipo)
+                try:
+                    cur = self.conn.cursor()
+                    cur.execute(f"SELECT COUNT(*) FROM {tipo}ortacao_municipio WHERE ano = {ano}")
+                    res = cur.fetchone()[0]
+                    print(res)
+                    if res > 0:
+                        app_logger.info(f"Transações por município de {tipo}ortação para o ano de {ano} já estão cadastradas.")
+                        continue
+                    else:
+                        self.registra_transacao_municipio(ano, tipo)
+                        self.atualizar_views_materializadas()
+                except Error as e:
+                    error_logger.error(f"Erro ao verificar existência de registros para o ano de {ano}: {str(e)}")
+                    self.conn.rollback()
+                finally:
+                    if cur:cur.close()
         
+
+    def atualizar_views_materializadas(self) -> None:
+        try:
+            cur = self.conn.cursor()
+            cur.execute("SELECT atualizar_views_materializadas()")
+            self.conn.commit()
+            cur.close()
+            app_logger.info("Views materializadas atualizadas com sucesso")
+        except Error as e:
+            self.conn.rollback()
+            error_logger.error("Erro ao atualizar views materializadas: %s", str(e))
+
 
     def buid_db(self) -> None:
         self.registra_paises()

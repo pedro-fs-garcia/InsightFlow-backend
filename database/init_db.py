@@ -53,12 +53,44 @@ def create_tables_if_not_exist():
         return
     try:
         with conn.cursor() as cur:
-            cur.execute(create_tables_script)
+            # First check if the table exists
+            cur.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'exportacao_estado'
+                );
+            """)
+            table_exists = cur.fetchone()[0]
+            
+            if not table_exists:
+                # If table doesn't exist, execute the full script
+                cur.execute(create_tables_script)
+            else:
+                # If table exists, check for primary key
+                cur.execute("""
+                    SELECT 1 FROM pg_constraint 
+                    WHERE conname = 'exportacao_estado_pkey' 
+                    AND conrelid = 'exportacao_estado'::regclass
+                """)
+                pk_exists = cur.fetchone() is not None
+                
+                if not pk_exists:
+                    # If primary key doesn't exist, execute the full script
+                    cur.execute(create_tables_script)
+                else:
+                    # If primary key exists, execute the script without the ALTER TABLE statements
+                    script_without_pk = create_tables_script.replace(
+                        "ALTER TABLE exportacao_estado ADD PRIMARY KEY (id_transacao, ano);",
+                        ""
+                    ).replace(
+                        "ALTER TABLE importacao_estado ADD PRIMARY KEY (id_transacao, ano);",
+                        ""
+                    )
+                    cur.execute(script_without_pk)
+            
             conn.commit()
-            app_logger.info("Tabelas criadas.")
-            builder = BuildDatabase(configure)
-            builder.buid_db()
-            builder.close_connection()
+            app_logger.info("Tabelas criadas ou atualizadas com sucesso.")
+
     except OperationalError as e:
         conn.rollback()
         error_logger.error("Erro ao criar tabelas no banco de dados: %s", str(e))
@@ -68,3 +100,6 @@ def create_tables_if_not_exist():
 def init_db():
     create_database_if_not_exists()
     create_tables_if_not_exist()
+    builder = BuildDatabase(configure)
+    builder.buid_db()
+    builder.close_connection()
