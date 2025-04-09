@@ -210,9 +210,49 @@ SELECT
 FROM importacao_estado
 GROUP BY ano, id_estado, id_produto, id_pais;
 
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_balanca_comercial AS
+WITH exp AS (
+    SELECT
+        ano,
+        mes,
+        id_pais,
+        id_estado,
+        SUM(valor_fob) AS total_exportado
+    FROM exportacao_estado
+    GROUP BY ano, mes, id_pais, id_estado
+),
+imp AS (
+    SELECT
+        ano,
+        mes,
+        id_pais,
+        id_estado,
+        SUM(valor_fob) AS total_importado
+    FROM importacao_estado
+    GROUP BY ano, mes, id_pais, id_estado 
+)
+SELECT
+    COALESCE(exp.ano, imp.ano) AS ano,
+    COALESCE(exp.mes, imp.mes) AS mes,
+    COALESCE(exp.id_pais, imp.id_pais) AS id_pais,
+    COALESCE(exp.id_estado, imp.id_estado) AS id_estado,
+    exp.total_exportado,
+    imp.total_importado,
+    COALESCE(exp.total_exportado, 0) - COALESCE(imp.total_importado, 0) AS balanca_comercial
+FROM exp
+FULL OUTER JOIN imp
+    ON exp.ano = imp.ano
+    AND exp.mes = imp.mes
+    AND exp.id_pais = imp.id_pais
+    AND exp.id_estado = imp.id_estado
+ORDER BY ano, mes;
+
+
 -- Índices para as views materializadas
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_exportacao_estado_anual ON mv_exportacao_estado_anual(ano, id_estado, id_produto, id_pais);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_importacao_estado_anual ON mv_importacao_estado_anual(ano, id_estado, id_produto, id_pais);
+
 
 -- Função para atualizar as views materializadas
 CREATE OR REPLACE FUNCTION atualizar_views_materializadas()
@@ -220,6 +260,8 @@ RETURNS void AS $$
 BEGIN
     REFRESH MATERIALIZED VIEW CONCURRENTLY mv_exportacao_estado_anual;
     REFRESH MATERIALIZED VIEW CONCURRENTLY mv_importacao_estado_anual;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_balanca_comercial;
+
 END;
 $$ LANGUAGE plpgsql;
 '''
