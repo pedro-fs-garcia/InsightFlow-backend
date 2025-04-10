@@ -21,6 +21,28 @@ limiter = Limiter(
 #/busca_ncm_hist
 #/busca_ncm_por_nome
 
+
+@ncm_bp.route('/busca_transacoes_por_ncm', methods=['GET'])
+@limiter.limit("10 per minute")
+def busca_transacoes_por_ncm():
+    args = routes_utils.get_args(request)
+
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    if 'tipo' not in args.keys():
+        return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
+        
+    if 'ncm' not in args.keys():
+        return jsonify({'error': "Erro na requisição: Parâmetro 'ncm' é obrigatório."}), 400
+    try:
+        transacoes_ncm = ncm_dao.busca_transacoes_por_ncm(**args)
+        return routes_utils.return_response(transacoes_ncm)
+    except TypeError as e:
+        error_logger.error(str(e))
+        return jsonify({'error': f'Argumento inesperado na requisição: {str(e)}'}), 400
+
+
 @ncm_bp.route('/ranking_ncm', methods=['GET'])
 @limiter.limit("10 per minute")
 def busca_top_ncm() -> Response:

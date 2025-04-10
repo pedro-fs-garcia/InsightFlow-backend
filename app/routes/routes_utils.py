@@ -20,7 +20,8 @@ def get_args(request: Request) -> dict | list:
         "vias": [int],
         "urfs": [int],
 
-        "ncm": [int]
+        "ncm": [int],
+        "peso": int
     }
 
     for param, tipo in params.items():
@@ -49,6 +50,10 @@ def get_args(request: Request) -> dict | list:
 
     if (cresc:=args.get('cresc')) and cresc not in (1, 0):
         errors.append(f"Critério 'cresc' deve ser 1 ou 0.")
+    
+    if (peso:=args.get('peso')) and peso <= 0:
+        errors.append("Peso especificado deve ser maior que 0.")
+
 
     if errors: return errors
 

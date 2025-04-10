@@ -62,6 +62,65 @@ Essa rota é útil para análises de mercado e acompanhamento do fluxo de import
 
 ---
 
+## GET `/busca_transacoes_por_ncm`
+**Descrição:**
+Esta rota permite buscar transações para o ncm especificado que atendam aos parâmetros indicados.
+
+**Parâmetros da requisição:**
+A requisição aceita os seguinte parâmetros via query string:
+
+| Parâmetro   | Tipo       | Obrigatório | Descrição |
+|-------------|-----------|-------------|-------------|
+| `ncm`       | `list[int]` | Sim       | Lista de ncms a serem buscados. |
+| `tipo`      | `string`  | Sim         | Tipo de transação: `exp` para exportação ou `imp` para importação. |
+| `qtd`       | `int`     | Não         | Quantidade de NCMs a serem retornados. Valor padrão: `10`. Deve ser um número inteiro positivo. |
+| `anos`      | `list[int]` | Não       | Lista de anos a serem considerados. Valores permitidos: `2014-2024`. |
+| `meses`     | `list[int]` | Não       | Lista de meses a serem considerados (1 a 12). |
+| `paises`    | `list[int]` | Não       | Lista de identificadores de países a serem considerados. |
+| `estados`   | `list[int]` | Não       | Lista de identificadores de estados brasileiros a serem considerados. |
+| `vias`      | `list[int]` | Não       | Lista de identificadores de vias de transporte a serem consideradas. |
+| `urfs`       | `list[int]` | Não       | Lista de identificadores de unidades da receita federal a serem consideradas.  |
+
+
+**Exemplo de Requisição:**
+```
+GET /busca_transacoes_por_ncm?ncm=12019000&tipo=exp&anos=2020&meses=1&peso=400
+```
+**Respostas:**
+
+- **200 OK** - Retorna as informações sobre os ncm requisitados de arcordo com os critérios escolhidos.
+```json
+{
+  "resposta": [
+    {
+      "ano": 2020,
+      "id_pais": 850,
+      "id_transacao": 6153683,
+      "kg_liquido": "1440.00",
+      "valor_agregado": "2.89",
+      "valor_fob": "4158.00"
+    },
+    {
+      "ano": 2020,
+      "id_pais": 586,
+      "id_transacao": 6153700,
+      "kg_liquido": "2347000.00",
+      "valor_agregado": "0.33",
+      "valor_fob": "775700.00"
+    },
+    {
+      "ano": 2020,
+      "id_pais": 845,
+      "id_transacao": 6153702,
+      "kg_liquido": "437.00",
+      "valor_agregado": "79.33",
+      "valor_fob": "34669.00"
+    }
+  ]
+}
+```
+
+
 ## GET `/busca_por_ncm`
 **Descrição:**
 Esta rota permite buscar informações (kg liquido, valor FOB, valor agregado e número de registros) de exportação e importação por ncm de acordo com critérios específicos, como ano, país, estado e via de transporte.
