@@ -71,7 +71,7 @@ A requisição aceita os seguinte parâmetros via query string:
 
 | Parâmetro   | Tipo       | Obrigatório | Descrição |
 |-------------|-----------|-------------|-------------|
-| `ncm`       | `list[int]` | Sim       | Lista de ncms a serem buscados. |
+| `ncm`       | `int` | Sim       | Lista de ncms a serem buscados. |
 | `tipo`      | `string`  | Sim         | Tipo de transação: `exp` para exportação ou `imp` para importação. |
 | `qtd`       | `int`     | Não         | Quantidade de NCMs a serem retornados. Valor padrão: `10`. Deve ser um número inteiro positivo. |
 | `anos`      | `list[int]` | Não       | Lista de anos a serem considerados. Valores permitidos: `2014-2024`. |
