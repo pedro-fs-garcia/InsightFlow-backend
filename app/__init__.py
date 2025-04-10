@@ -2,6 +2,7 @@ from flask import Flask
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
+from flask_cors import CORS
 import os
 
 load_dotenv()
@@ -16,6 +17,7 @@ limiter = Limiter(key_func=get_remote_address,
 
 def create_app():
     app = Flask(__name__)
+    CORS(app)
     app.config['SECRET_KEY'] = os.getenv("SECRET_KEY",'sua-chave-secreta')
 
     limiter.init_app(app)
