@@ -97,8 +97,7 @@ def busca_pais_hist(
 
                 query = f"""
                     SELECT pais.id_pais, pais.nome AS nome_pais,
-                        ano, mes,
-                        bloco.nome_bloco, 
+                        ano, {'mes, ' if meses else ''}
                         SUM(kg_liquido) as kg_liquido_total_{tipo},
                         SUM(valor_fob) as valor_fob_total_{tipo},
                         CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS valor_agregado_total_{tipo},
@@ -107,7 +106,7 @@ def busca_pais_hist(
                     LEFT JOIN bloco ON pais.id_bloco = bloco.id_bloco
                     LEFT JOIN {tipo}ortacao_estado ON pais.id_pais = {tipo}ortacao_estado.id_pais
                     {where_statement}
-                    GROUP BY pais.id_pais, ano, mes, bloco.nome_bloco
+                    GROUP BY pais.id_pais, ano {', mes' if meses else ''}
                     ORDER BY ano, mes
                 """
 
