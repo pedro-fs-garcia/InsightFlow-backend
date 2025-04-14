@@ -1,3 +1,4 @@
+from functools import cache
 import time
 from typing import List, Literal
 from psycopg2 import Error
@@ -9,6 +10,7 @@ from ..database.database_connection import get_connection
 from ..utils.logging_config import app_logger, error_logger
 
 
+@cache
 def busca_top_pais(
         tipo: Literal['exp', 'imp'],
         qtd: int = 10, 
@@ -76,6 +78,7 @@ def busca_top_pais(
         return None
 
 
+@cache
 def busca_pais_hist(
         tipo:Literal['exp', 'imp'],
         paises: List[int],
@@ -107,7 +110,7 @@ def busca_pais_hist(
                     LEFT JOIN {tipo}ortacao_estado ON pais.id_pais = {tipo}ortacao_estado.id_pais
                     {where_statement}
                     GROUP BY pais.id_pais, ano {', mes' if meses else ''}
-                    ORDER BY ano, mes
+                    ORDER BY ano {', mes' if meses else ''}
                 """
 
                 inicio = time.time()

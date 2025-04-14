@@ -253,6 +253,7 @@ ORDER BY ano, mes;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_exportacao_estado_anual ON mv_exportacao_estado_anual(ano, id_estado, id_produto, id_pais);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_importacao_estado_anual ON mv_importacao_estado_anual(ano, id_estado, id_produto, id_pais);
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_balanca_comercial_unique ON mv_balanca_comercial (ano, mes, id_pais, id_estado);
 
 -- Função para atualizar as views materializadas
 CREATE OR REPLACE FUNCTION atualizar_views_materializadas()
