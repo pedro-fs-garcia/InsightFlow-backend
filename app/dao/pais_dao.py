@@ -39,10 +39,10 @@ def busca_top_pais(
                     query = f"""
                         SELECT pais.id_pais,
                             pais.nome AS nome_pais,
+                            {f"SUM(mv_{tipo}ortacao_estado_anual.quantidade_total) AS total_registros, " if crit == 'registros' else ''}
                             SUM(mv_{tipo}ortacao_estado_anual.valor_fob_total) as total_valor_fob,
                             SUM(mv_{tipo}ortacao_estado_anual.kg_liquido_total) as total_kg_liquido,
-                            CAST(SUM(mv_{tipo}ortacao_estado_anual.valor_fob_total)/NULLIF(SUM(mv_{tipo}ortacao_estado_anual.kg_liquido_total), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
-                            SUM(mv_{tipo}ortacao_estado_anual.quantidade_total) AS total_registros
+                            CAST(SUM(mv_{tipo}ortacao_estado_anual.valor_fob_total)/NULLIF(SUM(mv_{tipo}ortacao_estado_anual.kg_liquido_total), 0) AS DECIMAL(15,2)) AS total_valor_agregado
                         FROM pais
                         JOIN mv_{tipo}ortacao_estado_anual ON mv_{tipo}ortacao_estado_anual.id_pais = pais.id_pais
                         {where_statement}
@@ -77,6 +77,81 @@ def busca_top_pais(
         error_logger.error(f'Erro ao buscar top NCM no banco de dados: {str(e)}')
         return None
 
+
+def busca_pais_exp_imp_info(
+        paises: List[int],
+        qtd: int = 10, 
+        anos: List[int] = None, 
+        meses: List[int] | None = None,
+        ncm: List[int] | None = None,
+        estados: List[int] | None = None,
+        vias: List[int] | None = None,
+        urfs: List[int] | None = None
+) -> List[dict] | None:
+    try:
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                where_statement = build_where(paises=paises, anos=anos, estados=estados, meses=meses, vias=vias, urfs=urfs)
+                if ncm:
+                    if where_statement.startswith('WHERE'):
+                        where_statement += f" AND id_produto IN ({', '.join([str(n) for n in ncm])})"
+                    else:
+                        where_statement = f"WHERE id_produto IN ({', '.join([str(n) for n in ncm])})"
+
+                # Se não houver filtro por mês, usar a view materializada
+                if not meses and not vias and not urfs:
+                    
+                    query = f"""
+                        SELECT pais.id_pais,
+                            pais.nome AS nome_pais,
+                            SUM(mv_exportacao_estado_anual.quantidade_total) AS total_registros_exp,
+                            SUM(mv_exportacao_estado_anual.valor_fob_total) as total_valor_fob_exp,
+                            SUM(mv_exportacao_estado_anual.kg_liquido_total) as total_kg_liquido_exp,
+                            CAST(SUM(mv_exportacao_estado_anual.valor_fob_total)/NULLIF(SUM(mv_exportacao_estado_anual.kg_liquido_total), 0) AS DECIMAL(15,2)) AS total_valor_agregado_exp,
+                            
+                            SUM(mv_importacao_estado_anual.quantidade_total) AS total_registros_imp,
+                            SUM(mv_importacao_estado_anual.valor_fob_total) as total_valor_fob_imp,
+                            SUM(mv_importacao_estado_anual.kg_liquido_total) as total_kg_liquido_imp,
+                            CAST(SUM(mv_importacao_estado_anual.valor_fob_total)/NULLIF(SUM(mv_importacao_estado_anual.kg_liquido_total), 0) AS DECIMAL(15,2)) AS total_valor_agregado_imp
+                        FROM pais
+                        LEFT JOIN mv_exportacao_estado_anual ON mv_exportacao_estado_anual.id_pais = pais.id_pais
+                        LEFT JOIN mv_importacao_estado_anual ON mv_importacao_estado_anual.id_pais = pais.id_pais
+                        {where_statement}
+                        GROUP BY pais.id_pais, pais.nome
+                    """
+                else:
+                    # Usar a tabela original se houver filtro por mês
+                    query = f"""
+                        SELECT
+                            p.id_pais,
+                            p.nome AS nome_pais,
+
+                            SUM(e.valor_fob) AS total_valor_fob_exp,
+                            SUM(e.kg_liquido) AS total_kg_liquido_exp,
+                            CAST(SUM(e.valor_fob)/NULLIF(SUM(e.kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado_exp,
+                            COUNT(e.id_exportacao) AS total_registros_exp,
+
+                            SUM(i.valor_fob) AS total_valor_fob_imp,
+                            SUM(i.kg_liquido) AS total_kg_liquido_imp,
+                            CAST(SUM(i.valor_fob)/NULLIF(SUM(i.kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado_imp,
+                            COUNT(i.id_importacao) AS total_registros_imp
+
+                        FROM pais p
+                        LEFT JOIN exportacao_estado e ON e.id_pais = p.id_pais
+                        LEFT JOIN importacao_estado i ON i.id_pais = p.id_pais
+                        {where_statement}
+                        GROUP BY p.id_pais, p.nome;
+                    """
+                inicio = time.time()
+                cur.execute(query, (qtd,))
+                results = [dict(row) for row in cur.fetchall()]
+                fim = time.time()
+                tempo = f"Tempo de execução: {fim - inicio:.4f} segundos"
+                app_logger.info(f"Informações dos paises {paises} foram acessadas. {tempo}")
+                return results
+    except Error as e:
+        error_logger.error(f'Erro ao buscar top NCM no banco de dados: {str(e)}')
+        return None
 
 @cache
 def busca_pais_hist(

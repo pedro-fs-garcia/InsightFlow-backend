@@ -52,6 +52,20 @@ def busca_pais_hist():
     return routes_utils.return_response(pais_hist)
 
 
+@pais_bp.route('/busca_pais_exp_imp_info', methods=["GET"])
+def busca_pais_exp_imp_info():
+    args = get_args(request)
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    args_keys = args.keys()
+    if 'paises' not in args_keys:
+        return jsonify({'error': "Erro na requisição: Parâmetro 'paises' é obrigatório."}), 400
+    
+    pais_info = pais_dao.busca_pais_exp_imp_info(**args)
+    return routes_utils.return_response(pais_info)
+
+
 @pais_bp.route('/pesquisa_pais_por_nome', methods=["GET"])
 @limiter.limit('10 per minute')
 def pesquisa_pais():
