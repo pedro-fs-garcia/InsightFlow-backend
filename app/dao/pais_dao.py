@@ -10,7 +10,7 @@ from ..database.database_connection import get_connection
 from ..utils.logging_config import app_logger, error_logger
 
 
-@cache
+
 def busca_top_pais(
         tipo: Literal['exp', 'imp'],
         qtd: int = 10, 
@@ -92,6 +92,9 @@ def busca_pais_exp_imp_info(
         with get_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 where_statement = build_where(paises=paises, anos=anos, estados=estados, meses=meses, vias=vias, urfs=urfs)
+                where_statement = where_statement.replace('id_pais', "pais.id_pais")
+                where_statement = where_statement.replace('ano', "mv_exportacao_estado_anual.ano")
+                
                 if ncm:
                     if where_statement.startswith('WHERE'):
                         where_statement += f" AND id_produto IN ({', '.join([str(n) for n in ncm])})"
@@ -153,7 +156,7 @@ def busca_pais_exp_imp_info(
         error_logger.error(f'Erro ao buscar top NCM no banco de dados: {str(e)}')
         return None
 
-@cache
+
 def busca_pais_hist(
         tipo:Literal['exp', 'imp'],
         paises: List[int],
