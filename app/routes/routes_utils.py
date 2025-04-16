@@ -21,6 +21,7 @@ def get_args(request: Request) -> dict | list:
         "urfs": [int],
 
         "ncm": [int],
+        "sh4": [str],
         "peso": int
     }
 

@@ -49,3 +49,18 @@ def pesquisa_sh4_por_nome():
     else:
         pesquisa = sh4_dao.pesquisa_sh4_por_nome(nome)
     return routes_utils.return_response(pesquisa)
+
+
+@sh_bp.route('/busca_vlfob_sh4', methods=["GET"])
+def busca_vlfob_sh4():
+    args = get_args(request)
+    print(args)
+
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    if 'sh4' not in args.keys():
+        return jsonify({'error':"Erro na requisição: parâmetro 'sh4' é obrigatório."}), 400
+
+    vlfob_sh4 = sh4_dao.busca_vlfob_sh4(**args)
+    return routes_utils.return_response(vlfob_sh4)

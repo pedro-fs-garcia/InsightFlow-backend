@@ -84,3 +84,32 @@ GET /busca_top_sh4_por_mun?tipo=exp&qtd=5&anos=2022&municipios=4314902&crit=valo
   ]
 }
 ```
+
+
+## GET `/busca_vlfob_sh4`
+**Descrição:**
+Rota de busca de agregados de exportaçõ e importação por sh4. A rota devolve o total em valor FOB que foi importado e exportado de acordo com os códigos sh4 determinados. 
+**Parâmetros da Requisição:**
+A requisição aceita os seguintes parâmetros via query string:
+| Parâmetro   | Tipo       | Obrigatório | Descrição |
+|-------------|-----------|-------------|-------------|
+| `sh4`       |`List[str]`| Sim         | Um ou mais códigos sh4 cujas informações serão buscadas|
+| `anos`      |`List[int]`| Não         | Um ou mais anos entre `2014` e `2024`. |
+|`estados`    |`List[int]`| Não         | Códigos dos estados que registringirão a busca|
+
+**Exemplo de Requisição:**
+```
+GET /busca_vlfob_sh4?sh4=1201
+```
+**Respostas:**
+- **200 OK** - Retorna o sometório do vaor fob de exportação e importação para o conjunto de sh4 escolhidos para os estados escolhidos
+```json
+{
+  "resposta": [
+    {
+      "total_valor_fob_exp": "354215692443.00",
+      "total_valor_fob_imp": "1956696335.00"
+    }
+  ]
+}
+```
