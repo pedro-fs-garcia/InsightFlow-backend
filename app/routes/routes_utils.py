@@ -27,6 +27,7 @@ def get_args(request: Request) -> dict | list:
     for param, tipo in params.items():
         if isinstance(tipo, list):
             value = request.args.getlist(param, type=tipo[0])
+            value = tuple(value) if value else None
         else:
             value = request.args.get(param, type=tipo)
         
@@ -39,7 +40,7 @@ def get_args(request: Request) -> dict | list:
     if (qtd:= args.get('qtd')) is not None and qtd <= 0:
         errors.append('Quantidade informada deve ser um número inteiro positivo.')
 
-    for ano in args.get('anos', []):
+    for ano in args.get('anos', ()):
         if isinstance(ano, int) and ano not in range(2014, 2025):
             errors.append(f'Ano inválido: {ano}. Utilize um ano entre 2014 e 2024.')
             break

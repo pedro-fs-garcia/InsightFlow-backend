@@ -23,7 +23,8 @@ def busca_transacoes_por_ncm(
     try:
         with get_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
-                where_statement = build_where(paises=paises, estados=estados, anos=anos, meses=meses, urfs=urfs, vias=vias)
+                where_statement = build_where(ncm=ncm, paises=paises, estados=estados, anos=anos, meses=meses, urfs=urfs, vias=vias)
+                where_statement = where_statement.replace('produto.id_ncm', 'id_produto')
                 if peso:
                     if where_statement.startswith('WHERE'):
                         where_statement += f"AND kg_liquido > {peso}"
@@ -31,8 +32,18 @@ def busca_transacoes_por_ncm(
                         where_statement = f"WHERE kg_liquido > {peso}"
 
                 query = f"""
-                    SELECT id_transacao, ano, id_pais, valor_fob, kg_liquido, valor_agregado 
-                    FROM {tipo}ortacao_estado
+                    SELECT id_transacao, ano, valor_fob, kg_liquido, valor_agregado, 
+                        ncm.descricao AS mercadoria,
+                        p.nome AS nome_pais, 
+                        e.sigla AS sigla_estado, 
+                        v.descricao AS transporte,
+                        urf.nome AS unidade_receita_federal
+                    FROM {tipo}ortacao_estado t 
+                    JOIN pais p ON p.id_pais = t.id_pais
+                    JOIN estado e ON e.id_estado = t.id_estado
+                    JOIN modal_transporte v ON v.id_modal_transporte = t.id_modal_transporte
+                    JOIN unidade_receita_federal urf ON urf.id_unidade = t.id_unidade_receita_federal
+                    JOIN produto ncm on ncm.id_ncm = t.id_produto
                     {where_statement}
                     LIMIT %s
                 """
@@ -170,12 +181,12 @@ def busca_ncm_hist(
 def busca_top_ncm(
         tipo: Literal['exp', 'imp'],
         qtd: int = 10, 
-        anos: List[int] = None, 
-        meses: List[int] | None = None,
-        paises: List[int] | None = None,
-        estados: List[int] | None = None,
-        vias: List[int] | None = None,
-        urfs: List[int] | None = None,
+        anos: tuple[int, ...] = None, 
+        meses: tuple[int, ...] | None = None,
+        paises: tuple[int, ...] | None = None,
+        estados: tuple[int, ...] | None = None,
+        vias: tuple[int, ...] | None = None,
+        urfs: tuple[int, ...] | None = None,
         crit: Literal['kg_liquido', 'valor_fob', 'valor_agregado', 'registros'] = 'valor_fob',
         cresc: Literal[1, 0] = 0
     ) -> List[dict] | None:

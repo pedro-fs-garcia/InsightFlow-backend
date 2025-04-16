@@ -10,16 +10,16 @@ from ..database.database_connection import get_connection
 from ..utils.logging_config import app_logger, error_logger
 
 
-
+@cache
 def busca_top_pais(
         tipo: Literal['exp', 'imp'],
         qtd: int = 10, 
-        anos: List[int] = None, 
-        meses: List[int] | None = None,
-        ncm: List[int] | None = None,
-        estados: List[int] | None = None,
-        vias: List[int] | None = None,
-        urfs: List[int] | None = None,
+        anos: tuple[int, ...] | None = None, 
+        meses: tuple[int, ...] | None = None,
+        ncm: tuple[int, ...] | None = None,
+        estados: tuple[int, ...] | None = None,
+        vias: tuple[int, ...] | None = None,
+        urfs: tuple[int, ...] | None = None,
         crit: Literal['kg_liquido', 'valor_fob', 'valor_agregado', 'registros'] = 'valor_fob',
         cresc: Literal[1, 0] = 0
 ) -> List[dict] | None:
@@ -78,15 +78,16 @@ def busca_top_pais(
         return None
 
 
+@cache
 def busca_pais_exp_imp_info(
-        paises: List[int],
+        paises: tuple[int, ...],
         qtd: int = 10, 
-        anos: List[int] = None, 
-        meses: List[int] | None = None,
-        ncm: List[int] | None = None,
-        estados: List[int] | None = None,
-        vias: List[int] | None = None,
-        urfs: List[int] | None = None
+        anos: tuple[int, ...] = None, 
+        meses: tuple[int, ...] | None = None,
+        ncm: tuple[int, ...] | None = None,
+        estados: tuple[int, ...] | None = None,
+        vias: tuple[int, ...] | None = None,
+        urfs: tuple[int, ...] | None = None
 ) -> List[dict] | None:
     try:
         with get_connection() as conn:
@@ -157,15 +158,16 @@ def busca_pais_exp_imp_info(
         return None
 
 
+@cache
 def busca_pais_hist(
         tipo:Literal['exp', 'imp'],
-        paises: List[int],
-        anos: List[int] | None = None,
-        meses: List[int] | None = None,
-        estados: List[int] | None = None,
-        vias: List[int] | None = None,
-        urfs: List[int] | None = None,
-        ncm: List[int] | None = None,
+        paises: tuple[int, ...],
+        anos: tuple[int, ...] | None = None,
+        meses: tuple[int, ...] | None = None,
+        estados: tuple[int, ...] | None = None,
+        vias: tuple[int, ...] | None = None,
+        urfs: tuple[int, ...] | None = None,
+        ncm: tuple[int, ...] | None = None,
 ) -> List[dict] | None:
     try:
         with get_connection() as conn:

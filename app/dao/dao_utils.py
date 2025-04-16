@@ -4,14 +4,14 @@ from typing import List
 
 
 def build_where(
-        anos:List[int]=None, 
-        meses:List[int]=None, 
-        paises:List[int]=None, 
-        estados:List[int]=None, 
-        vias:List[int]=None, 
-        urfs:List[int]=None, 
-        municipios:List[int]=None,
-        ncm:List[int]=None,
+        anos:tuple[int,...]=None, 
+        meses:tuple[int,...]=None, 
+        paises:tuple[int,...]=None, 
+        estados:tuple[int,...]=None, 
+        vias:tuple[int,...]=None, 
+        urfs:tuple[int,...]=None, 
+        municipios:tuple[int,...]=None,
+        ncm:tuple[int,...]=None,
 ) -> str:
     filtros = []
     if anos:
