@@ -102,7 +102,7 @@ A requisição aceita os seguintes parâmetros via query string:
 GET /busca_vlfob_sh4?sh4=1201
 ```
 **Respostas:**
-- **200 OK** - Retorna o sometório do vaor fob de exportação e importação para o conjunto de sh4 escolhidos para os estados escolhidos
+- **200 OK** - Retorna o somatório do valor fob de exportação e importação para o conjunto de sh4 escolhidos para os estados escolhidos
 ```json
 {
   "resposta": [
@@ -111,5 +111,55 @@ GET /busca_vlfob_sh4?sh4=1201
       "total_valor_fob_imp": "1956696335.00"
     }
   ]
+}
+```
+
+
+## GET `/busca_vlfob_setores`
+**Descrição:**
+Rota de busca de agregados de exportaçõ e importação por setores da economia (Agronegócio, Bens de Consumo, Indústria, Mineração, Setor Florestal e Tecnologia). A rota devolve o total em valor FOB que foi importado e exportado de cada setor. 
+**Parâmetros da Requisição:**
+A requisição aceita os seguintes parâmetros via query string:
+| Parâmetro   | Tipo       | Obrigatório | Descrição |
+|-------------|-----------|-------------|-------------|
+| `anos`      |`List[int]`| Não         | Um ou mais anos entre `2014` e `2024`. |
+|`estados`    |`List[int]`| Não         | Códigos dos estados que registringirão a busca|
+| `paises`    |`List[int]`| Não         | Códigos dos países a serem considerados na busca|
+
+
+**Exemplo de Requisição:**
+```
+GET /busca_vlfob_setores?anos=2024&anos=2023&estados=41&paises=43
+```
+**Respostas:**
+- **200 OK** - Retorna o somatório do valor fob de exportação e importação de cada setor segundo os parâmetros escolhidos
+```json
+{
+  "resposta": {
+    "Agronegócio": {
+      "total_valor_fob_exp": "1131093.00",
+      "total_valor_fob_imp": "0"
+    },
+    "Bens de consumo": {
+      "total_valor_fob_exp": "41674.00",
+      "total_valor_fob_imp": "0"
+    },
+    "Indústria": {
+      "total_valor_fob_exp": "121894.00",
+      "total_valor_fob_imp": "1569.00"
+    },
+    "Mineração": {
+      "total_valor_fob_exp": "70085.00",
+      "total_valor_fob_imp": "107.00"
+    },
+    "Setor Florestal": {
+      "total_valor_fob_exp": "14116.00",
+      "total_valor_fob_imp": "0"
+    },
+    "Tecnologia": {
+      "total_valor_fob_exp": "397387.00",
+      "total_valor_fob_imp": "0"
+    }
+  }
 }
 ```

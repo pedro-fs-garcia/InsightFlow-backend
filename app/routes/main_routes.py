@@ -1,6 +1,7 @@
-from flask import Blueprint, jsonify, request
+from functools import cache
+from flask import Blueprint, json, jsonify, request
 
-from app.dao import transacao_dao
+from app.dao import sh4_dao, transacao_dao
 from app.routes import routes_utils
 from ..utils.logging_config import error_logger, app_logger
 
@@ -23,6 +24,24 @@ def main_function():
     except TypeError as e:
         error_logger.error(str(e))
         return jsonify({'error': f'Argumento inesperado na requisição: {str(e)}'}), 400
+    
+
+@main.route('/busca_vlfob_setores', methods=["GET"])
+def busca_vlfob_setores():
+    args = routes_utils.get_args(request)
+    
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+    
+    with open('app/static/setores.json') as json_file:
+        setores = json.load(json_file)
+    
+    res = {}
+    for setor, codes in setores.items():
+        args['sh4'] = tuple(codes.get('sh4'))
+        res[setor] = sh4_dao.busca_vlfob_sh4(**args)[0]
+    return routes_utils.return_response(res)
+
 
 from .ncm_routes import ncm_bp
 from .bloco_routes import bloco_bp

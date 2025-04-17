@@ -1,3 +1,4 @@
+from functools import cache
 import time
 from typing import List, Literal
 from psycopg2 import Error, OperationalError
@@ -90,16 +91,18 @@ def busca_top_sh4_por_municipio(
         return None    
     
 
+@cache
 def busca_vlfob_sh4(
-        sh4: tuple[int, ...],
+        sh4: tuple[str, ...],
         anos: tuple[int, ...] | None = None,
+        paises: tuple[int, ...] | None = None,
         estados: tuple[int, ...] | None = None
 )-> List[dict] | None:
     try:
         with get_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
-                where_statement = build_where(anos=anos, estados=estados)
-                sh4_str = ', '.join(f"'{s}'" for s in sh4)
+                where_statement = build_where(anos=anos, paises=paises, estados=estados)
+                sh4_str = ', '.join([f"'{s}'" for s in sh4])
                 if where_statement.startswith("WHERE"):
                     where_statement += f"AND s.id_sh4 IN ({sh4_str})"
                 else:
@@ -127,16 +130,14 @@ def busca_vlfob_sh4(
                         GROUP BY p.id_sh4
                     )
                     SELECT 
-                        COALESCE(e.total_valor_fob_exp, 0) AS total_valor_fob_exp,
-                        COALESCE(i.total_valor_fob_imp, 0) AS total_valor_fob_imp
+                        COALESCE(SUM(e.total_valor_fob_exp), 0) AS total_valor_fob_exp,
+                        COALESCE(SUM(i.total_valor_fob_imp), 0) AS total_valor_fob_imp
                     FROM exportacoes e
                     FULL OUTER JOIN importacoes i ON e.id_sh4 = i.id_sh4
                 """
-                print(query)
                 inicio = time.time()
                 cur.execute(query)
                 res = cur.fetchone()
-                print("res:", res)
                 fim = time.time()
                 tempo = f"Tempo de execução: {fim-inicio :.4f} seg"
                 app_logger.info(f"Busca de vl_fob por sh4 {sh4} realizada com sucesso. {tempo}")
@@ -144,4 +145,3 @@ def busca_vlfob_sh4(
     except (Error, OperationalError) as e:
         error_logger.error(f"Erro ao buscar valores por sh4 {sh4}. Erro: {str(e)}")
         return None
-    return
