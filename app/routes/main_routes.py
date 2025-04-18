@@ -48,6 +48,7 @@ from .bloco_routes import bloco_bp
 from .pais_routes import pais_bp
 from .sh_routes import sh_bp
 from .bc_routes import balanca_comercial_bp
+from .estados_routes import estado_bp
 
 all_blueprints = [
     main, 
@@ -55,5 +56,6 @@ all_blueprints = [
     pais_bp, 
     bloco_bp, 
     sh_bp, 
-    balanca_comercial_bp
+    balanca_comercial_bp,
+    estado_bp
 ]
