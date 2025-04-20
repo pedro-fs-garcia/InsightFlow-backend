@@ -30,6 +30,12 @@ def busca_transacoes_por_ncm(
                         where_statement += f"AND kg_liquido > {peso}"
                     else:
                         where_statement = f"WHERE kg_liquido > {peso}"
+                if paises:
+                    where_statement = where_statement.replace('id_pais', 'p.id_pais')
+                if estados:
+                    where_statement = where_statement.replace('id_estado', 'e.id_estado')
+                if vias:
+                    where_statement = where_statement.replace('id_modal_transporte', 'v.id_modal_transporte')
 
                 query = f"""
                     SELECT id_transacao, ano, valor_fob, kg_liquido, valor_agregado, 
@@ -45,13 +51,14 @@ def busca_transacoes_por_ncm(
                     JOIN unidade_receita_federal urf ON urf.id_unidade = t.id_unidade_receita_federal
                     JOIN produto ncm on ncm.id_ncm = t.id_produto
                     {where_statement}
+                    ORDER BY t.valor_fob DESC
                     LIMIT %s
                 """
                 cur.execute(query, (qtd, ))
                 res = cur.fetchall()
                 return [dict(row) for row in res]
     except (Error, OperationalError) as e:
-        error_logger.error(f'Erro ao buscar NCM {ncm} no banco de dados: {str(e)}')
+        error_logger.error(f'Erro ao buscar transações por NCM {ncm} no banco de dados: {str(e)}')
         return None
 
 
