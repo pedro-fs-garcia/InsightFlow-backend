@@ -4,7 +4,7 @@ from psycopg2 import sql, OperationalError, connect
 
 from .build_database import BuildDatabase
 from . import config
-from .create_tables_script import create_tables_script
+from .create_tables_script import create_tables_script, cria_mv_setores
 from app.utils.logging_config import app_logger, error_logger
 
 configure = {
@@ -87,7 +87,7 @@ def create_tables_if_not_exist():
                         ""
                     )
                     cur.execute(script_without_pk)
-            
+            cur.execute(cria_mv_setores)
             conn.commit()
             app_logger.info("Tabelas criadas ou atualizadas com sucesso.")
 

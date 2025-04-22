@@ -95,45 +95,24 @@ def busca_top_sh4_por_municipio(
 def busca_vlfob_sh4(
         sh4: tuple[str, ...],
         anos: tuple[int, ...] | None = None,
-        paises: tuple[int, ...] | None = None,
         estados: tuple[int, ...] | None = None
 )-> List[dict] | None:
     try:
         with get_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
-                where_statement = build_where(anos=anos, paises=paises, estados=estados)
+                where_statement = build_where(anos=anos, estados=estados)
                 sh4_str = ', '.join([f"'{s}'" for s in sh4])
                 if where_statement.startswith("WHERE"):
-                    where_statement += f"AND s.id_sh4 IN ({sh4_str})"
+                    where_statement += f"AND id_sh4 IN ({sh4_str})"
                 else:
-                    where_statement = f"WHERE s.id_sh4 IN ({sh4_str})"
+                    where_statement = f"WHERE id_sh4 IN ({sh4_str})"
 
                 query = f"""
-                    WITH exportacoes AS (
-                        SELECT 
-                            p.id_sh4,
-                            SUM(e.valor_fob) AS total_valor_fob_exp
-                        FROM produto p
-                        JOIN sh4 s ON s.id_sh4 = p.id_sh4
-                        JOIN exportacao_estado e ON e.id_produto = p.id_ncm
-                        {where_statement}
-                        GROUP BY p.id_sh4
-                    ),
-                    importacoes AS (
-                        SELECT 
-                            p.id_sh4,
-                            SUM(i.valor_fob) AS total_valor_fob_imp
-                        FROM produto p
-                        JOIN sh4 s ON s.id_sh4 = p.id_sh4
-                        JOIN importacao_estado i ON i.id_produto = p.id_ncm
-                        {where_statement}
-                        GROUP BY p.id_sh4
-                    )
                     SELECT 
-                        COALESCE(SUM(e.total_valor_fob_exp), 0) AS total_valor_fob_exp,
-                        COALESCE(SUM(i.total_valor_fob_imp), 0) AS total_valor_fob_imp
-                    FROM exportacoes e
-                    FULL OUTER JOIN importacoes i ON e.id_sh4 = i.id_sh4
+                        COALESCE(SUM(valor_fob_exp), 0) AS total_valor_fob_exp,
+                        COALESCE(SUM(valor_fob_imp), 0) AS total_valor_fob_imp
+                    FROM mv_vlfob_setores
+                    {where_statement}
                 """
                 inicio = time.time()
                 cur.execute(query)

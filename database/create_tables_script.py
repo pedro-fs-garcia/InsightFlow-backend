@@ -265,4 +265,56 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql;
+
+
 '''
+
+
+cria_mv_setores = """
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_vlfob_setores AS
+WITH exportacoes AS (
+    SELECT 
+        s.id_sh4,
+        e.ano,
+        e.id_estado,
+        SUM(e.valor_fob) AS valor_fob_exp,
+        SUM(e.kg_liquido) AS kg_liquido_exp
+    FROM produto p
+    JOIN sh4 s ON s.id_sh4 = p.id_sh4
+    JOIN exportacao_estado e ON e.id_produto = p.id_ncm
+    GROUP BY s.id_sh4, ano, e.id_estado
+),
+importacoes AS (
+    SELECT 
+        s.id_sh4,
+        i.ano,
+        i.id_estado,
+        SUM(i.valor_fob) AS valor_fob_imp,
+        SUM(i.kg_liquido) AS kg_liquido_imp
+    FROM produto p
+    JOIN sh4 s ON s.id_sh4 = p.id_sh4
+    JOIN importacao_estado i ON i.id_produto = p.id_ncm
+    GROUP BY s.id_sh4, ano, i.id_estado
+)
+SELECT 
+    COALESCE(e.id_sh4, i.id_sh4) AS id_sh4,
+    COALESCE(e.ano, i.ano) AS ano,
+    COALESCE(e.id_estado, i.id_estado) AS id_estado,
+    COALESCE(e.valor_fob_exp, 0) AS valor_fob_exp,
+    COALESCE(i.valor_fob_imp, 0) AS valor_fob_imp,
+    COALESCE(e.kg_liquido_exp, 0) AS kg_liquido_exp,
+    COALESCE(i.kg_liquido_imp, 0) AS kg_liquido_imp
+FROM exportacoes e
+FULL OUTER JOIN importacoes i
+    ON e.id_sh4 = i.id_sh4 AND e.ano = i.ano AND e.id_estado = i.id_estado  ;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_vlfob_setores ON mv_vlfob_setores (id_sh4, ano, id_estado);
+
+    CREATE OR REPLACE FUNCTION atualizar_mv_vlfob_setores()
+RETURNS void AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_vlfob_setores;
+
+END;
+$$ LANGUAGE plpgsql;
+"""
