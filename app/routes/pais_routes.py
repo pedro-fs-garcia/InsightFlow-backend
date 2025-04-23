@@ -22,7 +22,6 @@ limiter = Limiter(
 #/busca_pais_por_nome
 
 @pais_bp.route('/ranking_pais', methods = ["GET"])
-@limiter.limit("10 per minute")
 def busca_top_paises():
     args = get_args(request)
 
@@ -37,7 +36,7 @@ def busca_top_paises():
 
 
 @pais_bp.route('/busca_pais_hist', methods=["GET"])
-@limiter.limit('10 per minute')
+
 def busca_pais_hist():
     args = get_args(request)
 

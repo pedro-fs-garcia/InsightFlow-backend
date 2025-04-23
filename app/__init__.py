@@ -20,7 +20,7 @@ def create_app():
     CORS(app)
     app.config['SECRET_KEY'] = os.getenv("SECRET_KEY",'sua-chave-secreta')
 
-    limiter.init_app(app)
+ 
 
     from .routes.main_routes import all_blueprints
     for bp in all_blueprints:

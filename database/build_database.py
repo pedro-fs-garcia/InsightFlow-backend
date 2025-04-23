@@ -375,15 +375,15 @@ class BuildDatabase:
 
 
     def buid_db(self) -> None:
-        self.registra_paises()
-        self.registra_blocos()
-        self.registra_estados()
-        self.registra_municipios()
-        self.registra_modal_transporte()
-        self.registra_urfs()
-        self.registra_cgce_n3()
-        self.registra_sh()
-        self.registra_produto()
+        # self.registra_paises()
+        # self.registra_blocos()
+        # self.registra_estados()
+        # self.registra_municipios()
+        # self.registra_modal_transporte()
+        # self.registra_urfs()
+        # self.registra_cgce_n3()
+        # self.registra_sh()
+        # self.registra_produto()
         self.registra_transacoes_estado()
         self.registra_transacoes_municipio()
         
