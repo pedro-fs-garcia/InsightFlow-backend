@@ -10,8 +10,8 @@ from ..utils.logging_config import app_logger, error_logger
 
 def busca_top_estado(
     tipo: Literal['exp', 'imp'],
-    qtd: int = 26, 
-    anos: List[int] = None, 
+    qtd: int = 26,
+    anos: List[int] = None,
     meses: List[int] | None = None,
     ncm: List[int] | None = None,
     paises: List[int] | None = None,
@@ -23,72 +23,59 @@ def busca_top_estado(
     try:
         with get_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
-                where_statement = build_where(
-                    anos=anos, paises=paises, meses=meses, vias=vias, urfs=urfs
-                )
+                tabela_view = f"mv_{tipo}ortacao_estado_anual"
+                where_conditions = []
+                params = []
+
+                if anos:
+                    where_conditions.append("m.ano IN %s")
+                    params.append(anos)
 
                 if ncm:
-                    filtro_ncm = f"id_produto IN ({', '.join(map(str, ncm))})"
-                    where_statement += f" AND {filtro_ncm}" if where_statement else f"WHERE {filtro_ncm}"
+                    where_conditions.append("m.id_produto IN %s")
+                    params.append(ncm)
+
+                if paises:
+                    where_conditions.append("m.id_pais IN %s")
+                    params.append(paises)
+
+                if meses:
+                    app_logger.warning("Filtro por meses ignorado - não disponível nas views materializadas")
+
+                if vias or urfs:
+                    app_logger.warning("Filtros por vias ou URFs ignorados - não disponíveis nas views materializadas")
+
+                where_sql = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
 
                 query = f"""
-                    SELECT estado.id_estado,
-                           estado.sigla AS sigla_estado,
-                           estado.nome AS nome_estado,
-                           SUM(valor_fob) as total_valor_fob,
-                           SUM(kg_liquido) as total_kg_liquido,
-                           CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado,
-                           COUNT(*) AS total_registros
-                    FROM {tipo}ortacao_estado 
-                    JOIN estado ON {tipo}ortacao_estado.id_estado = estado.id_estado
-                    {where_statement}
-                    GROUP BY estado.id_estado, estado.sigla, estado.nome
+                    SELECT 
+                        e.id_estado,
+                        e.sigla AS sigla_estado,
+                        e.nome AS nome_estado,
+                        SUM(m.valor_fob_total) AS total_valor_fob,
+                        SUM(m.kg_liquido_total) AS total_kg_liquido,
+                        CASE 
+                            WHEN SUM(m.kg_liquido_total) = 0 THEN 0
+                            ELSE CAST(SUM(m.valor_fob_total) / SUM(m.kg_liquido_total) AS DECIMAL(15,2))
+                        END AS total_valor_agregado,
+                        SUM(m.quantidade_total) AS total_registros
+                    FROM {tabela_view} m
+                    JOIN estado e ON m.id_estado = e.id_estado
+                    {where_sql}
+                    GROUP BY e.id_estado, e.sigla, e.nome
                     ORDER BY total_{crit} {'ASC' if cresc else 'DESC'}
                     LIMIT %s
                 """
-                cur.execute(query, (qtd,))
+
+                params.append(qtd)
+
+                cur.execute(query, params)
                 return [dict(row) for row in cur.fetchall()]
+                
     except Error as e:
-        error_logger.error(f'Erro ao buscar top estados: {str(e)}')
+        error_logger.error(f"Erro ao buscar ranking dos estados: {str(e)}")
         return None
 
-
-def busca_estado_hist(
-        tipo: Literal['exp', 'imp'],
-        estados: List[int],
-        anos: List[int] | None = None,
-        meses: List[int] | None = None,
-        paises: List[int] | None = None,
-        vias: List[int] | None = None,
-        urfs: List[int] | None = None,
-        ncm: List[int] | None = None,
-) -> List[dict] | None:
-    try:
-        with get_connection() as conn:
-            with conn.cursor(cursor_factory=DictCursor) as cur:
-                where_statement = build_where(anos=anos, meses=meses, estados=estados, paises=paises, vias=vias, urfs=urfs, ncm=ncm)
-                where_statement = where_statement.replace('id_estado', f'{tipo}ortacao_estado.id_estado')
-
-                query = f"""
-                    SELECT estado.id_estado,
-                        estado.sigla AS sigla_estado,
-                        estado.nome AS nome_estado,
-                        ano, mes,
-                        SUM(kg_liquido) as kg_liquido_total_{tipo},
-                        SUM(valor_fob) as valor_fob_total_{tipo},
-                        CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS valor_agregado_total_{tipo},
-                        COUNT(*) AS total_registros
-                    FROM estado
-                    LEFT JOIN {tipo}ortacao_estado ON estado.id_estado = {tipo}ortacao_estado.id_estado
-                    {where_statement}
-                    GROUP BY estado.id_estado, estado.sigla, estado.nome, ano, mes
-                    ORDER BY ano, mes
-                """
-                cur.execute(query)
-                return [dict(row) for row in cur.fetchall()]
-    except Error as e:
-        error_logger.error(f"Erro ao buscar histórico dos estados: {str(e)}")
-        return None
 
 
 def pesquisa_estado_por_nome(nome: str) -> List[dict] | None:
