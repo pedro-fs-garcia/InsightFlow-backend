@@ -15,18 +15,15 @@ GET /ranking_estado?tipo=exp&tipo=imp&qtd=10&anos=2020&anos=2021&meses=1&meses=2
 
 ### Parâmetros:
 
-| Parâmetro   | Tipo         | Obrigatório | Descrição |
-|-------------|--------------|-------------|-----------|
-| `tipo`      | `list[str]`  | ✅ Sim      | Tipo de transação: `exp` (exportação) ou `imp` (importação). Aceita mais de um. |
-| `qtd`       | `int`        | ❌ Não      | Número máximo de estados no ranking. Padrão: `10`. |
-| `anos`      | `list[int]`  | ❌ Não      | Anos considerados. Permitidos: `2014-2024`. |
-| `meses`     | `list[int]`  | ❌ Não      | Meses considerados (1 a 12). |
-| `ncm`       | `list[int]`  | ❌ Não      | Lista de códigos NCM. |
-| `paises`    | `list[int]`  | ❌ Não      | Lista de países. |
-| `vias`      | `list[int]`  | ❌ Não      | Vias de transporte. |
-| `urfs`      | `list[int]`  | ❌ Não      | Unidades da Receita Federal. |
+| Parâmetro   | Tipo         | Obrigatório | Descrição | Limitações |
+|-------------|--------------|-------------|-----------|------------|
+| `tipo`      | `list[str]`  | ✅ Sim      | Tipo de transação: `exp` (exportação) ou `imp` (importação). Aceita múltiplos valores. | - |
+| `qtd`       | `int`        | ❌ Não      | Número máximo de estados no ranking (padrão: 10, máximo: 50). | Valores negativos serão ignorados |
+| `anos`      | `list[int]`  | ❌ Não      | Anos para filtro (2014-2024). | Máximo 5 anos por consulta |
+| `ncm`       | `list[int]`  | ❌ Não      | Códigos NCM para filtro. | Até 10 códigos por consulta |
+| `paises`    | `list[int]`  | ❌ Não      | IDs de países para filtro. | Até 5 países por consulta |
 | `crit`      | `string`     | ❌ Não      | Critério de ordenação: `kg_liquido`, `valor_fob`, `valor_agregado`, `registros`. Padrão: `valor_fob`. |
-| `cresc`     | `int`        | ❌ Não      | 0 para decrescente (padrão), 1 para crescente. |
+| `cresc`     | `int`        | ❌ Não      | Ordem: `0`=decrescente (padrão), `1`=crescente | - |
 
 ### Exemplo de Resposta:
 ```json
