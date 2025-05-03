@@ -1,5 +1,5 @@
 from threading import Thread
-from typing import List, Literal
+from typing import Callable, List, Literal
 import pandas as pd
 from psycopg2 import Error
 import os
@@ -186,10 +186,10 @@ class PreProcessador:
         # return df.head(qtd)
 
 
-    def salvar_dados_agregados(self, max_threads=2):  # ajuste max_threads conforme a memória disponível
+    def salvar_dados_agregados(self, max_threads=1):  # ajuste max_threads conforme a memória disponível
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        def gerar_e_salvar(func:function, nome:str, *args, **kwargs):
+        def gerar_e_salvar(func:Callable, nome:str, *args, **kwargs):
             df = func(*args, **kwargs)
             self.salvar_tabela(df, nome)
 
