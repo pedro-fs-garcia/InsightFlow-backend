@@ -1,3 +1,4 @@
+import json
 from threading import Thread
 from typing import Callable, List, Literal
 import pandas as pd
@@ -87,10 +88,12 @@ class PreProcessador:
     def balanca_comercial_mensal_estado_pais(self) -> pd.DataFrame:
         app_logger.info("Criando balanca comercial por estado")
         df_exp_grouped = self.transacoes_exp.groupby(['CO_ANO', 'CO_MES', 'CO_PAIS', 'SG_UF_NCM'], as_index=False).agg(
-            total_exportado=('VL_FOB', 'sum')
+            VL_FOB_EXP=('VL_FOB', 'sum'),
+            KG_LIQUIDO_EXP=('KG_LIQUIDO', 'sum')
         )
         df_imp_grouped = self.transacoes_imp.groupby(['CO_ANO', 'CO_MES', 'CO_PAIS', 'SG_UF_NCM'], as_index=False).agg(
-            total_importado=('VL_FOB', 'sum')
+            VL_FOB_IMP=('VL_FOB', 'sum'),
+            KG_LIQUIDO_IMP=('KG_LIQUIDO', 'sum')
         )
         df_balanca = pd.merge(
             df_exp_grouped, 
@@ -98,40 +101,110 @@ class PreProcessador:
             on=['CO_ANO', 'CO_MES', 'CO_PAIS', 'SG_UF_NCM'], 
             how='outer'
         )
-        df_balanca['total_exportado'] = df_balanca['total_exportado'].fillna(0)
-        df_balanca['total_importado'] = df_balanca['total_importado'].fillna(0)
-        df_balanca['balanca_comercial'] = df_balanca['total_exportado'] - df_balanca['total_importado']
-        df_balanca = df_balanca.sort_values(by=['CO_ANO', 'CO_MES'])
-        app_logger.info("Fim da criação de balanca comercial por estado")
+        df_balanca['CO_ANO'] = df_balanca['CO_ANO'].astype(int)
+        df_balanca['CO_MES'] = df_balanca['CO_MES'].astype(int)
+        df_balanca['DATA'] = pd.to_datetime(df_balanca['CO_ANO'].astype(str) + '-' + df_balanca['CO_MES'].astype(str).str.zfill(2))
+        df_balanca = df_balanca.drop(columns=['CO_ANO', 'CO_MES'])
+
+        df_balanca['VL_FOB_EXP'] = df_balanca['VL_FOB_EXP'].fillna(0)
+        df_balanca['VL_FOB_IMP'] = df_balanca['VL_FOB_IMP'].fillna(0)
+        df_balanca['KG_LIQUIDO_EXP'] = df_balanca['KG_LIQUIDO_EXP'].fillna(0)
+        df_balanca['KG_LIQUIDO_IMP'] = df_balanca['KG_LIQUIDO_IMP'].fillna(0)
+        df_balanca['balanca_comercial'] = df_balanca['VL_FOB_EXP'] - df_balanca['VL_FOB_IMP']
+
+        df_balanca = df_balanca.sort_values(by=['DATA'])
+        app_logger.info(f"Fim da criação de balanca comercial mensal por estado: {len(df_balanca)} linhas")
         return df_balanca
     
 
-    def agregado_por_sh4_anual_estado(self) -> pd.DataFrame:
+    def mv_ncm_mensal_estado_pais(self, tipo: Literal['EXP', 'IMP']) -> pd.DataFrame:
+        app_logger.info("Criando agregado mensal de NCM por estado e por pais")
+
+        if tipo == 'EXP':
+            df_ncm = self.transacoes_exp.groupby(['CO_ANO', 'CO_MES', 'CO_NCM', 'CO_PAIS', 'SG_UF_NCM'], as_index=False).agg(
+                VL_FOB_EXP=('VL_FOB', 'sum'),
+            )
+        elif tipo == 'IMP':
+            df_ncm = self.transacoes_imp.groupby(['CO_ANO', 'CO_MES', 'CO_NCM', 'CO_PAIS', 'SG_UF_NCM'], as_index=False).agg(
+                VL_FOB_IMP=('VL_FOB', 'sum'),
+            )
+        else:
+            raise Error
+        df_ncm['CO_ANO'] = df_ncm['CO_ANO'].astype(int)
+        df_ncm['CO_MES'] = df_ncm['CO_MES'].astype(int)
+        df_ncm['DATA'] = pd.to_datetime(df_ncm['CO_ANO'].astype(str) + '-' + df_ncm['CO_MES'].astype(str).str.zfill(2))
+        df_ncm = df_ncm.drop(columns=['CO_ANO', 'CO_MES'])
+
+        df_ncm[f'VL_FOB_{tipo}'] = df_ncm[f'VL_FOB_{tipo}'].fillna(0)
+        df_ncm = df_ncm.sort_values(by=['DATA'])
+        app_logger.info(f"Fim da criação de agregado mensal de {tipo} por NCM por estado e por pais: {len(df_ncm)} linhas")
+        return df_ncm
+
+
+    def mv_sh4_mensal_estado_pais(self) -> pd.DataFrame:
         app_logger.info("Criando agregado por sh4")
         ncm_df = self.base_df.gera_ncm_df()
         df_exp_merged = self.transacoes_exp.merge(ncm_df[['CO_NCM', 'CO_SH4']], left_on='CO_NCM', right_on='CO_NCM')
-        df_exp_grouped = df_exp_merged.groupby(['CO_SH4', 'CO_ANO', 'SG_UF_NCM'], as_index=False).agg(
-            valor_fob_exp=('VL_FOB', 'sum'),
-            kg_liquido_exp=('KG_LIQUIDO', 'sum')
+        df_exp_grouped = df_exp_merged.groupby(['CO_SH4', 'CO_ANO', 'CO_MES', 'CO_PAIS', 'SG_UF_NCM'], as_index=False).agg(
+            VL_FOB_EXP = ('VL_FOB', 'sum'),
+            KG_LIQUIDO_EXP = ('KG_LIQUIDO', 'sum')
         )
-        
         df_imp_merged = self.transacoes_imp.merge(ncm_df[['CO_NCM', 'CO_SH4']], left_on='CO_NCM', right_on='CO_NCM')
-        df_imp_grouped = df_imp_merged.groupby(['CO_SH4', 'CO_ANO', 'SG_UF_NCM'], as_index=False).agg(
-            valor_fob_imp=('VL_FOB', 'sum'),
-            kg_liquido_imp=('KG_LIQUIDO', 'sum')
+        df_imp_grouped = df_imp_merged.groupby(['CO_SH4', 'CO_ANO', 'CO_MES', 'CO_PAIS', 'SG_UF_NCM'], as_index=False).agg(
+            VL_FOB_IMP = ('VL_FOB', 'sum'),
+            KG_LIQUIDO_IMP = ('KG_LIQUIDO', 'sum')
         )
-        
-        df_vlfob_setores = pd.merge(
+        df = pd.merge(
             df_exp_grouped,
             df_imp_grouped,
-            on=['CO_SH4', 'CO_ANO', 'SG_UF_NCM'],
+            on=['CO_SH4', 'CO_ANO', 'CO_MES', 'CO_PAIS', 'SG_UF_NCM'],
             how='outer'
         )
-        
-        for col in ['valor_fob_exp', 'valor_fob_imp', 'kg_liquido_exp', 'kg_liquido_imp']:
-            df_vlfob_setores[col] = df_vlfob_setores[col].fillna(0)
-        app_logger.info("Fim da criação do agregado por sh4")
-        return df_vlfob_setores
+        df['CO_ANO'] = df['CO_ANO'].astype(int)
+        df['CO_MES'] = df['CO_MES'].astype(int)
+        df['DATA'] = pd.to_datetime(df['CO_ANO'].astype(str) + '-' + df['CO_MES'].astype(str).str.zfill(2))
+        df = df.drop(columns=['CO_ANO', 'CO_MES'])
+
+        for col in ['VL_FOB_EXP', 'VL_FOB_IMP', 'KG_LIQUIDO_EXP', 'KG_LIQUIDO_IMP']:
+            df[col] = df[col].fillna(0)
+        app_logger.info(f"Fim da criação de agregado mensal por SH4 por estado e por pais: {len(df)} linhas")
+        return df
+
+
+    def mv_setores_mensal_estado_pais(self):
+        app_logger.info("Iniciando criação do agregado mensal por setor por estado por país")
+
+        with open('data_pipeline/tabelas_auxiliares/setores.json', 'r', encoding='utf-8') as f:
+            setores = json.load(f)
+        df = pd.read_csv(f'{self.output_dir}/mv_sh4_mensal.csv')
+        df['CO_SH4'] = df['CO_SH4'].astype(str)
+
+        colunas_agregadas = ['VL_FOB_EXP', 'VL_FOB_IMP', 'KG_LIQUIDO_EXP', 'KG_LIQUIDO_IMP']
+        colunas_grupo = ['setor', 'DATA', 'SG_UF_NCM', 'CO_PAIS']
+        setores_padrao = {
+            'Agronegócio': 'agronegocio',
+            'Indústria': 'industria',
+            'Mineração': 'mineracao',
+            'Setor Florestal': 'setor florestal',
+            'Tecnologia': 'tecnologia'
+        }
+        dfs_setores = []
+        for nome_original, nome_padrao in setores_padrao.items():
+            sh4_list = setores.get(nome_original, {}).get('sh4', [])
+            if not sh4_list:
+                app_logger.warning(f"Setor '{nome_original}' não possui códigos SH4 definidos.")
+                continue
+            df_setor = df[df['CO_SH4'].isin(sh4_list)].copy()
+            if df_setor.empty:
+                app_logger.warning(f"Setor '{nome_original}' está vazio após filtro.")
+                continue
+            df_setor['setor'] = nome_padrao
+            df_setor = df_setor.groupby(colunas_grupo, as_index=False)[colunas_agregadas].sum()
+            dfs_setores.append(df_setor)
+        df_final = pd.concat(dfs_setores, ignore_index=True)
+        app_logger.info(f"Fim da criação do agregado mensal por setor por estado por país : {len(df_final)} linhas")
+        return df_final
+
 
 
     def ranking_ncm_estados(self,
@@ -186,7 +259,7 @@ class PreProcessador:
         # return df.head(qtd)
 
 
-    def salvar_dados_agregados(self, max_threads=1):  # ajuste max_threads conforme a memória disponível
+    def salvar_dados_agregados(self, max_threads=2):  # ajuste max_threads conforme a memória disponível
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
         def gerar_e_salvar(func:Callable, nome:str, *args, **kwargs):
@@ -194,12 +267,11 @@ class PreProcessador:
             self.salvar_tabela(df, nome)
 
         tarefas = [
-            ("mv_agregado_anual", self.agregado_anual_estado_pais_ncm, ()),
             ("mv_balanca_comercial", self.balanca_comercial_mensal_estado_pais, ()),
-            ("mv_vlfob_setores", self.agregado_por_sh4_anual_estado, ()),
-            # ("ranking_ncm_exp", self.ranking_ncm_estados, ('EXP',)),
-            # ("ranking_ncm_exp_por_ano", self.ranking_ncm_estados, ('EXP',), {'anos': tuple(range(2014, 2025))}),
-            # ("ranking_ncm_imp", self.ranking_ncm_estados, ('IMP',)),
+            ("mv_ncm_mensal_exp", self.mv_ncm_mensal_estado_pais, ('EXP',)),
+            ("mv_ncm_mensal_imp", self.mv_ncm_mensal_estado_pais, ('IMP',)),
+            ("mv_sh4_mensal", self.mv_sh4_mensal_estado_pais, ()),
+            ("mv_setores_mensal", self.mv_setores_mensal_estado_pais, ()),
         ]
 
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
