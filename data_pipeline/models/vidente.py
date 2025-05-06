@@ -3,10 +3,15 @@ import os
 from typing import List, Literal
 import pandas as pd
 import matplotlib.pyplot as plt
-from prophet import Prophet
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+from pandas.tseries.offsets import MonthEnd
+import warnings
 
 from data_pipeline.models.gera_dataframes import GeradorDeDataFrames
 from app.utils.logging_config import app_logger, error_logger
+
+
+warnings.filterwarnings("ignore")
 
 
 class Vidente():
@@ -15,32 +20,47 @@ class Vidente():
         self.output_dir = 'data_pipeline/datasets/tendencias'
         os.makedirs(self.output_dir, exist_ok=True)
         return
+    
 
-
-    def gerar_profecia(self, df_prophet:pd.DataFrame, nome_arquivo:str, titulo_graf:str, ylabel:str):
-        profeta = Prophet()
-        profeta.fit(df_prophet)
-        futuro = profeta.make_future_dataframe(periods=24, freq='MS')
-        previsao = profeta.predict(futuro)
-
+    def gerar_profecia(self, df_prophet: pd.DataFrame, nome_arquivo: str, titulo_graf: str, ylabel: str):
         if len(df_prophet) < 2:
             print("Dados insuficientes para modelagem.")
             return
 
-        profeta.plot(previsao)
+        df = df_prophet.copy()
+        df['ds'] = pd.to_datetime(df['ds'])
+        df.set_index('ds', inplace=True)
+        df = df.asfreq('MS')  #frequência mensal com início no início do mês
+        df['y'] = df['y'].interpolate() 
+
+        modelo = SARIMAX(df['y'], order=(1,1,1), seasonal_order=(1,1,1,12), enforce_stationarity=False, enforce_invertibility=False)
+        modelo_fit = modelo.fit(disp=False)
+
+        n_periods = 24
+        future_index = pd.date_range(start=df.index[-1] + MonthEnd(1), periods=n_periods, freq='MS')
+        previsoes = modelo_fit.forecast(steps=n_periods)
+
+        df_previsao = pd.concat([df['y'], pd.Series(previsoes, index=future_index)], axis=0)
+        
+        plt.figure(figsize=(10, 5))
+        df_previsao.plot(label='Previsão')
+        plt.axvline(df.index[-1], color='gray', linestyle='--', label='Início da previsão')
         plt.title(titulo_graf)
         plt.xlabel('Data')
         plt.ylabel(ylabel)
+        plt.legend()
         plt.grid(True)
         plt.tight_layout()
         plt.savefig(f'{self.output_dir}/{nome_arquivo}.png', dpi=300)
-        # plt.show()
         plt.close()
 
-        resultado = previsao[['ds', 'yhat']].copy()
+        resultado = df_previsao.reset_index()
+        resultado.columns = ['ds', 'yhat']
         resultado['ds'] = resultado['ds'].astype(str)
-        app_logger.info("Análise de tendencias por NCM finalizada")
+
+        app_logger.info("Análise de tendências por NCM finalizada")
         return resultado.to_dict(orient='records')
+
 
 
     def tendencia_balanca_comercial(self, 

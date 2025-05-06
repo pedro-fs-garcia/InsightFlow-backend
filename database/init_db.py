@@ -4,7 +4,9 @@ from psycopg2 import sql, OperationalError, connect
 
 from .build_database import BuildDatabase
 from . import config
-from .create_tables_script import create_tables_script, cria_mv_setores
+from .create_tables_script import create_tables_script
+import database.create_tables_script as create
+
 from app.utils.logging_config import app_logger, error_logger
 
 configure = {
@@ -87,7 +89,6 @@ def create_tables_if_not_exist():
                         ""
                     )
                     cur.execute(script_without_pk)
-            cur.execute(cria_mv_setores)
             conn.commit()
             app_logger.info("Tabelas criadas ou atualizadas com sucesso.")
 
@@ -97,9 +98,62 @@ def create_tables_if_not_exist():
     finally:
         conn.close()
 
+
+def cria_views_materializadas():
+    conn = get_connection()
+    if not conn:
+        return
+    scripts = [
+        create.cria_mv_exportacao_estado_anual,
+        create.cria_mv_importacao_estado_anual,
+        create.cria_mv_balanca_comercial,
+        create.cria_mv_vlfob_setores,
+    ]
+    with conn.cursor() as cur:
+        for script in scripts:
+            try:
+                app_logger.info(f"Iniciando execução de {script[:75]}...")
+                cur.execute(script)
+                conn.commit()
+                app_logger.info(f"Script {script[:75]}... executado com sucesso")
+            except OperationalError as e:
+                conn.rollback()
+                error_logger.error(f"Erro ao executar {script[:75]}... : {str(e)}")
+                pass
+    if conn:
+        conn.close()
+
+
+def cria_funcoes():
+    conn = get_connection()
+    if not conn:
+        return
+    scripts = [
+        create.atualiza_mv_exportacao_estado_anual,
+        create.atualiza_mv_importacao_estado_anual,
+        create.atualiza_mv_balanca_comercial,
+        create.atualiza_mv_vlfob_setores,
+    ]
+    with conn.cursor() as cur:
+        for script in scripts:
+            try:
+                app_logger.info(f"Iniciando execução de {script[:70]}")
+                cur.execute(script)
+                conn.commit()
+                app_logger.info(f"Script {script[:70]} executado com sucesso")
+            except OperationalError as e:
+                conn.rollback()
+                error_logger.error(f"Erro ao executar {script[:70]}: {str(e)}")
+                pass
+    if conn:
+        conn.close()
+
+
 def init_db():
     create_database_if_not_exists()
     create_tables_if_not_exist()
+    cria_views_materializadas()
+    cria_funcoes()
     builder = BuildDatabase(configure)
     builder.buid_db()
     builder.close_connection()

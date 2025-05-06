@@ -1,3 +1,4 @@
+from functools import cache
 import time
 from typing import List, Literal
 from psycopg2 import Error
@@ -7,7 +8,7 @@ from .dao_utils import build_where
 from ..database.database_connection import get_connection
 from ..utils.logging_config import app_logger, error_logger
 
-
+@cache
 def busca_top_estado(
     tipo: Literal['exp', 'imp'],
     qtd: int = 26,

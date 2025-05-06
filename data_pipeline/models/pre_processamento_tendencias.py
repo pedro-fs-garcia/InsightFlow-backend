@@ -259,9 +259,7 @@ class PreProcessador:
         # return df.head(qtd)
 
 
-    def salvar_dados_agregados(self, max_threads=2):  # ajuste max_threads conforme a memória disponível
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-
+    def salvar_dados_agregados(self):
         def gerar_e_salvar(func:Callable, nome:str, *args, **kwargs):
             df = func(*args, **kwargs)
             self.salvar_tabela(df, nome)
@@ -274,14 +272,19 @@ class PreProcessador:
             ("mv_setores_mensal", self.mv_setores_mensal_estado_pais, ()),
         ]
 
-        with ThreadPoolExecutor(max_workers=max_threads) as executor:
-            futures = []
-            for nome, func, args, *rest in tarefas:
-                kwargs = rest[0] if rest else {}
-                futures.append(executor.submit(gerar_e_salvar, func, nome, *args, **kwargs))
+        os.makedirs(self.output_dir, exist_ok=True)
 
-            for future in as_completed(futures):
-                try:
-                    future.result()  # Captura exceções se houver
-                except Exception as e:
-                    print(f"Erro em uma das tarefas: {future.__str__()} {e}")
+        for nome, func, args in tarefas:
+            output_path = f"{self.output_dir}/{nome}.csv"
+
+            if os.path.exists(output_path):
+                print(f"[IGNORADO] Arquivo já existe: {nome}.csv")
+                continue
+
+            try:
+                print(f"[INFO] Executando: {nome}")
+                gerar_e_salvar(func, nome, *args)
+                print(f"[SUCESSO] Salvo: {nome}.csv")
+            except Exception as e:
+                print(f"[ERRO] Falha em {nome}: {e}")
+                return

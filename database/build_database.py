@@ -333,7 +333,7 @@ class BuildDatabase:
                         continue
                     else:
                         self.registra_transacao_estado(ano, tipo)
-                        self.atualizar_views_materializadas()
+                        # self.atualizar_views_materializadas()
                 except Error as e:
                     error_logger.error(f"Erro ao verificar existência de registros para o ano de {ano}: {str(e)}")
                     self.conn.rollback()
@@ -354,36 +354,44 @@ class BuildDatabase:
                         continue
                     else:
                         self.registra_transacao_municipio(ano, tipo)
-                        self.atualizar_views_materializadas()
+                        # self.atualizar_views_materializadas()
                 except Error as e:
                     error_logger.error(f"Erro ao verificar existência de registros para o ano de {ano}: {str(e)}")
                     self.conn.rollback()
                 finally:
                     if cur:cur.close()
-        
 
     def atualizar_views_materializadas(self) -> None:
-        try:
-            cur = self.conn.cursor()
-            cur.execute("SELECT atualizar_views_materializadas()")
-            self.conn.commit()
-            cur.close()
-            app_logger.info("Views materializadas atualizadas com sucesso")
-        except Error as e:
-            self.conn.rollback()
-            error_logger.error("Erro ao atualizar views materializadas: %s", str(e))
-
+        atualizacoes = [
+            "SELECT atualizar_mv_exportacao_estado_anual()",
+            "SELECT atualizar_mv_importacao_estado_anual()",
+            "SELECT atualizar_mv_balanca_comercial()",
+            "SELECT atualizar_mv_vlfob_setores()",
+        ]
+        with self.conn.cursor() as cur:
+            for foo in atualizacoes:
+                try:
+                    app_logger.info(f"Iniciando função {foo}")
+                    cur.execute(foo)
+                    self.conn.commit()
+                    app_logger.info(f"Função {foo} finalizada com sucesso")
+                except Error as e:
+                    self.conn.rollback()
+                    error_logger.error("Erro ao atualizar views materializadas: %s", str(e))
+                    pass
+                
 
     def buid_db(self) -> None:
-        # self.registra_paises()
-        # self.registra_blocos()
-        # self.registra_estados()
-        # self.registra_municipios()
-        # self.registra_modal_transporte()
-        # self.registra_urfs()
-        # self.registra_cgce_n3()
-        # self.registra_sh()
-        # self.registra_produto()
+        self.registra_paises()
+        self.registra_blocos()
+        self.registra_estados()
+        self.registra_municipios()
+        self.registra_modal_transporte()
+        self.registra_urfs()
+        self.registra_cgce_n3()
+        self.registra_sh()
+        self.registra_produto()
         self.registra_transacoes_estado()
-        self.registra_transacoes_municipio()
+        # self.registra_transacoes_municipio()
+        self.atualizar_views_materializadas()
         
