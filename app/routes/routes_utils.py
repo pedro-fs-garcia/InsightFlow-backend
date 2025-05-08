@@ -20,6 +20,9 @@ def get_args(request: Request) -> dict | list:
         "vias": [int],
         "urfs": [int],
 
+        "estado": int,
+        "pais": int,
+
         "ncm": [int],
         "sh4": [str],
         "peso": int

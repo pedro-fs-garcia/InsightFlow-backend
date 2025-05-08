@@ -1,3 +1,4 @@
+from functools import cache
 import json
 import os
 from typing import List, Literal
@@ -58,11 +59,11 @@ class Vidente():
         resultado.columns = ['ds', 'yhat']
         resultado['ds'] = resultado['ds'].astype(str)
 
-        app_logger.info("Análise de tendências por NCM finalizada")
+        app_logger.info(f"Análise de tendências {nome_arquivo} finalizada")
         return resultado.to_dict(orient='records')
 
 
-
+    @cache
     def tendencia_balanca_comercial(self, 
         estado: str|None = None,
         pais: int|None = None
@@ -77,6 +78,7 @@ class Vidente():
 
         df = df.groupby('DATA')[['balanca_comercial']].sum().reset_index()
         df_prophet = df[['DATA', 'balanca_comercial']].rename(columns={'DATA': 'ds', 'balanca_comercial': 'y'})
+        df_prophet['y'] = df_prophet['y'].fillna(0)
 
         nome = f"tendencia_balanca_comercial"
         if estado:
@@ -86,6 +88,7 @@ class Vidente():
         return self.gerar_profecia(df_prophet, nome, f"Previsão de Balança Comercial", "Balança Comercial ($)")
 
 
+    @cache
     def tendencia_vlfob(self, 
         tipo: Literal['EXP', 'IMP'],
         estado: str|None = None,
@@ -101,6 +104,7 @@ class Vidente():
 
         df = df.groupby('DATA')[[f'VL_FOB_{tipo}']].sum().reset_index()
         df_prophet = df[['DATA', f'VL_FOB_{tipo}']].rename(columns={'DATA': 'ds', f'VL_FOB_{tipo}': 'y'})
+        df_prophet['y'] = df_prophet['y'].fillna(0)
 
         nome = f"tendencia_vlfob_{tipo.lower()}"
         if estado:
@@ -109,7 +113,8 @@ class Vidente():
             nome += f"_p{pais}"
         return self.gerar_profecia(df_prophet, nome, f"Previsão de Valor Fob de {tipo}", f"Valor Fob {tipo} ($)")
 
-    
+
+    @cache
     def tendencia_valor_agregado(self, tipo:Literal['EXP', 'IMP'], estado:str|None = None, pais:int|None = None) -> List[dict]:
         app_logger.info(f"Iniciando análise de tendência de Valor Agregado de {tipo}")
         df = pd.read_csv("data_pipeline/datasets/dados_agregados/mv_balanca_comercial.csv")
@@ -126,6 +131,7 @@ class Vidente():
         df = df.groupby('DATA')[[f'VL_FOB_{tipo}', f'KG_LIQUIDO_{tipo}']].sum().reset_index()
         df['valor_agregado'] = df[f'VL_FOB_{tipo}'] / df[f'KG_LIQUIDO_{tipo}']
         df_prophet = df[['DATA', 'valor_agregado']].rename(columns={'DATA': 'ds', 'valor_agregado': 'y'})
+        df_prophet['y'] = df_prophet['y'].fillna(0)
 
         nome = f"tendencia_valor_agregado_{tipo.lower()}"
         if estado:

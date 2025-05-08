@@ -109,3 +109,16 @@ def busca_todos_estados():
     except Error as e:
         error_logger.error("Erro ao buscar todos os estados.")
         return None
+
+
+def busca_estado_sigla(id:int) -> str:
+    try:
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                cur.execute(f"SELECT sigla FROM estado WHERE id_estado = {id}")
+                res = cur.fetchone()[0]
+                print("res: ", res)
+                return res
+    except Error as e:
+        error_logger.error("Erro ao buscar todos os estados.")
+        return None
