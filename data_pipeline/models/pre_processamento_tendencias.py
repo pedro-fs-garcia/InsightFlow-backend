@@ -186,7 +186,8 @@ class PreProcessador:
             'Indústria': 'industria',
             'Mineração': 'mineracao',
             'Setor Florestal': 'setor florestal',
-            'Tecnologia': 'tecnologia'
+            'Tecnologia': 'tecnologia',
+            'Bens de consumo': 'bens de consumo'
         }
         dfs_setores = []
         for nome_original, nome_padrao in setores_padrao.items():

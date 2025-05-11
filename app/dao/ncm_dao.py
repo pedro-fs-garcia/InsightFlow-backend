@@ -143,7 +143,7 @@ def busca_por_ncm(
         return None
 
 
-
+@cache
 def busca_ncm_hist(
         tipo:Literal['exp', 'imp'], 
         ncm:List[int], 

@@ -43,17 +43,17 @@ class Vidente():
 
         df_previsao = pd.concat([df['y'], pd.Series(previsoes, index=future_index)], axis=0)
         
-        plt.figure(figsize=(10, 5))
-        df_previsao.plot(label='Previsão')
-        plt.axvline(df.index[-1], color='gray', linestyle='--', label='Início da previsão')
-        plt.title(titulo_graf)
-        plt.xlabel('Data')
-        plt.ylabel(ylabel)
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(f'{self.output_dir}/{nome_arquivo}.png', dpi=300)
-        plt.close()
+        # plt.figure(figsize=(10, 5))
+        # df_previsao.plot(label='Previsão')
+        # plt.axvline(df.index[-1], color='gray', linestyle='--', label='Início da previsão')
+        # plt.title(titulo_graf)
+        # plt.xlabel('Data')
+        # plt.ylabel(ylabel)
+        # plt.legend()
+        # plt.grid(True)
+        # plt.tight_layout()
+        # plt.savefig(f'{self.output_dir}/{nome_arquivo}.png', dpi=300)
+        # plt.close()
 
         resultado = df_previsao.reset_index()
         resultado.columns = ['ds', 'yhat']

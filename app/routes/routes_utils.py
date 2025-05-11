@@ -21,6 +21,7 @@ def get_args(request: Request) -> dict | list:
         "urfs": [int],
 
         "estado": int,
+        "estado_sigla":str,
         "pais": int,
 
         "ncm": [int],

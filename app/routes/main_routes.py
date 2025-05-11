@@ -49,6 +49,7 @@ from .pais_routes import pais_bp
 from .sh_routes import sh_bp
 from .bc_routes import balanca_comercial_bp
 from .estados_routes import estado_bp
+from .setores_routes import setores_bp
 from .tendencias_routes import tendencias_bp
 
 all_blueprints = [
@@ -59,5 +60,6 @@ all_blueprints = [
     sh_bp, 
     balanca_comercial_bp,
     estado_bp,
+    setores_bp,
     tendencias_bp
 ]
