@@ -70,7 +70,7 @@ def get_args(request: Request) -> dict | list:
 def return_response(data: List | List[dict]) -> Response:
     if data is not None:
         response = Response(
-            json.dumps({'resposta': data}, ensure_ascii=False),
+            json.dumps({'status':200,'resposta': data}, ensure_ascii=False),
             content_type = 'application/json; charset=utf-8',
             status = 200
         )
