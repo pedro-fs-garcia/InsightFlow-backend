@@ -4,7 +4,9 @@ import os
 from typing import List, Literal
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
 from statsmodels.tsa.statespace.sarimax import SARIMAX
+import statsmodels.api as smapi
 from pandas.tseries.offsets import MonthEnd
 import warnings
 
@@ -87,6 +89,79 @@ class Vidente():
             nome += f"_p{pais}"
         return self.gerar_profecia(df_prophet, nome, f"Previsão de Balança Comercial", "Balança Comercial ($)")
 
+    @cache
+    def regressao_linear_balanca_comercial(self, estado: str | None = None, pais: int | None = None) -> dict:
+        df = pd.read_csv("data_pipeline/datasets/dados_agregados/mv_balanca_comercial.csv")
+        if estado:
+            df = df[df['SG_UF_NCM'] == estado]
+        if pais:
+            df = df[df['CO_PAIS'] == pais]
+        df = df.groupby('DATA')[[f'balanca_comercial']].sum().reset_index()
+        df['DATA'] = pd.to_datetime(df['DATA'])
+        df = df.sort_values('DATA')
+        df['timestamp'] = df['DATA'].map(pd.Timestamp.timestamp)
+        X = df[['timestamp']]
+        y = df[f'balanca_comercial']
+        modelo = LinearRegression()
+        modelo.fit(X, y)
+        previsoes = modelo.predict(X)
+        df_resultado = pd.DataFrame({
+            'ds': df['DATA'].astype(str),
+            'y_real': y,
+            'y_regressao': previsoes
+        })
+        return {
+            "dados": df_resultado.to_dict(orient='records'),
+            "coeficiente_angular": modelo.coef_[0],
+            "intercepto": modelo.intercept_,
+            "r2": modelo.score(X, y)
+        }
+    
+
+    @cache
+    def crescimento_mensal_balanca_comercial(self, estado: str | None = None, pais: int | None = None) -> List[dict]:
+        df = pd.read_csv("data_pipeline/datasets/dados_agregados/mv_balanca_comercial.csv")
+        if estado:
+            df = df[df['SG_UF_NCM'] == estado]
+        if pais:
+            df = df[df['CO_PAIS'] == pais]
+        df = df.groupby('DATA')[[f'balanca_comercial']].sum().reset_index()
+        df['DATA'] = pd.to_datetime(df['DATA'])
+        df = df.sort_values('DATA')
+        df['crescimento'] = df[f'balanca_comercial'].pct_change().fillna(0) * 100
+        df_resultado = df[['DATA', 'crescimento']].rename(columns={'DATA': 'ds', 'crescimento': 'y'})
+        # df_resultado['ds'] = df_resultado['ds'].astype(str)
+        # return df_resultado.to_dict(orient='records')
+        nome = f"tendencia_crescimento_mensal_balanca"
+        if estado:
+            nome += f"_e{estado}"
+        if pais:
+            nome += f"_p{pais}"
+        return self.gerar_profecia(df_resultado, nome, "Crescimento Mensal da balança comercial", f"Taxa de crescimento")
+
+
+    @cache
+    def volatilidade_balanca_comercial(self, estado: str | None = None, pais: int | None = None) -> List[dict]:
+        df = pd.read_csv("data_pipeline/datasets/dados_agregados/mv_balanca_comercial.csv")
+        if estado:
+            df = df[df['SG_UF_NCM'] == estado]
+        if pais:
+            df = df[df['CO_PAIS'] == pais]
+        df = df.groupby('DATA')[[f'balanca_comercial']].sum().reset_index()
+        df['DATA'] = pd.to_datetime(df['DATA'])
+        df = df.sort_values('DATA')
+        df['volatilidade'] = df[f'balanca_comercial'].rolling(window=6).std().fillna(0)
+        df_resultado = df[['DATA', 'volatilidade']].rename(columns={'DATA': 'ds', 'volatilidade': 'y'})
+        # df_resultado['ds'] = df_resultado['ds'].astype(str)
+        # return df_resultado.to_dict(orient='records')
+        nome = f"tendencia_volatilidade_balanca"
+        if estado:
+            nome += f"_e{estado}"
+        if pais:
+            nome += f"_p{pais}"
+        return self.gerar_profecia(df_resultado, nome, "Volatilidade da Balança Comercial", f"Volatiliade")
+
+
 
     @cache
     def tendencia_vlfob(self, 
@@ -112,6 +187,79 @@ class Vidente():
         if pais:
             nome += f"_p{pais}"
         return self.gerar_profecia(df_prophet, nome, f"Previsão de Valor Fob de {tipo}", f"Valor Fob {tipo} ($)")
+    
+
+    @cache
+    def crescimento_mensal_vlfob(self, tipo: Literal['EXP', 'IMP'], estado: str | None = None, pais: int | None = None) -> List[dict]:
+        df = pd.read_csv("data_pipeline/datasets/dados_agregados/mv_balanca_comercial.csv")
+        if estado:
+            df = df[df['SG_UF_NCM'] == estado]
+        if pais:
+            df = df[df['CO_PAIS'] == pais]
+        df = df.groupby('DATA')[[f'VL_FOB_{tipo}']].sum().reset_index()
+        df['DATA'] = pd.to_datetime(df['DATA'])
+        df = df.sort_values('DATA')
+        df['crescimento'] = df[f'VL_FOB_{tipo}'].pct_change().fillna(0) * 100
+        df_resultado = df[['DATA', 'crescimento']].rename(columns={'DATA': 'ds', 'crescimento': 'y'})
+        # df_resultado['ds'] = df_resultado['ds'].astype(str)
+        # return df_resultado.to_dict(orient='records')
+        nome = f"tendencia_crescimento_mensal_vlfob_{tipo.lower()}"
+        if estado:
+            nome += f"_e{estado}"
+        if pais:
+            nome += f"_p{pais}"
+        return self.gerar_profecia(df_resultado, nome, "Crescimento Mensal do Valor Fob", f"Taxa de crescimento {tipo}")
+
+
+    @cache
+    def volatilidade_vlfob(self, tipo: Literal['EXP', 'IMP'], estado: str | None = None, pais: int | None = None) -> List[dict]:
+        df = pd.read_csv("data_pipeline/datasets/dados_agregados/mv_balanca_comercial.csv")
+        if estado:
+            df = df[df['SG_UF_NCM'] == estado]
+        if pais:
+            df = df[df['CO_PAIS'] == pais]
+        df = df.groupby('DATA')[[f'VL_FOB_{tipo}']].sum().reset_index()
+        df['DATA'] = pd.to_datetime(df['DATA'])
+        df = df.sort_values('DATA')
+        df['volatilidade'] = df[f'VL_FOB_{tipo}'].rolling(window=6).std().fillna(0)
+        df_resultado = df[['DATA', 'volatilidade']].rename(columns={'DATA': 'ds', 'volatilidade': 'y'})
+        # df_resultado['ds'] = df_resultado['ds'].astype(str)
+        # return df_resultado.to_dict(orient='records')
+        nome = f"tendencia_volatilidade_vlfob_{tipo.lower()}"
+        if estado:
+            nome += f"_e{estado}"
+        if pais:
+            nome += f"_p{pais}"
+        return self.gerar_profecia(df_resultado, nome, "Volatilidade de Valor FOB", f"Volatiliade {tipo}")
+
+
+    @cache
+    def regressao_linear_vlfob(self, tipo: Literal['EXP', 'IMP'], estado: str | None = None, pais: int | None = None) -> dict:
+        df = pd.read_csv("data_pipeline/datasets/dados_agregados/mv_balanca_comercial.csv")
+        if estado:
+            df = df[df['SG_UF_NCM'] == estado]
+        if pais:
+            df = df[df['CO_PAIS'] == pais]
+        df = df.groupby('DATA')[[f'VL_FOB_{tipo}']].sum().reset_index()
+        df['DATA'] = pd.to_datetime(df['DATA'])
+        df = df.sort_values('DATA')
+        df['timestamp'] = df['DATA'].map(pd.Timestamp.timestamp)
+        X = df[['timestamp']]
+        y = df[f'VL_FOB_{tipo}']
+        modelo = LinearRegression()
+        modelo.fit(X, y)
+        previsoes = modelo.predict(X)
+        df_resultado = pd.DataFrame({
+            'ds': df['DATA'].astype(str),
+            'y_real': y,
+            'y_regressao': previsoes
+        })
+        return {
+            "dados": df_resultado.to_dict(orient='records'),
+            "coeficiente_angular": modelo.coef_[0],
+            "intercepto": modelo.intercept_,
+            "r2": modelo.score(X, y)
+        }
 
 
     @cache
@@ -151,9 +299,6 @@ class Vidente():
         return
     
     def tendencia_ranking_sh4(self):
-        return
-    
-    def tendencia_ranking_setores(self):
         return
 
     # busca os ncm que mais aumentaram/diminuiram exportacao/importacao na série histórica

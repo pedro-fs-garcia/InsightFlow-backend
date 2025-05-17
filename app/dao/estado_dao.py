@@ -11,7 +11,7 @@ from ..utils.logging_config import app_logger, error_logger
 @cache
 def busca_top_estado(
     tipo: Literal['exp', 'imp'],
-    qtd: int = 26,
+    qtd: int = 27,
     anos: List[int] = None,
     meses: List[int] | None = None,
     ncm: List[int] | None = None,

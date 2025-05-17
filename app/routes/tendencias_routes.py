@@ -1,4 +1,5 @@
 from app.dao.estado_dao import busca_estado_sigla
+from data_pipeline.models.analises_auxiliares import gerar_estatisticas_auxiliares_vlfob
 from data_pipeline.models.vidente import Vidente
 from . import routes_utils
 from flask import Blueprint, jsonify, request
@@ -73,5 +74,144 @@ def busca_tendencia_va():
     
     if isinstance(va, str):
         return jsonify({'error': va}), 403
-    print(va)
     return routes_utils.return_response(va)
+
+
+@tendencias_bp.route('/crescimento_mensal_vlfob', methods=["GET"])
+def crescimento_mensal():
+    args: dict = routes_utils.get_args(request)
+
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    if 'tipo' not in args:
+        return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
+
+    args['tipo'] = args['tipo'].upper()
+    if args.get('estado'):
+        args['estado'] = busca_estado_sigla(args['estado'])
+
+    if not args.get('ncm'):
+        dados = vidente.crescimento_mensal_vlfob(
+            tipo=args['tipo'],
+            estado=args.get('estado'),
+            pais=args.get('pais')
+        )
+    else:
+        dados = None
+    return routes_utils.return_response(dados)
+
+
+@tendencias_bp.route('/volatilidade_vlfob', methods=["GET"])
+def volatilidade_vlfob():
+    args: dict = routes_utils.get_args(request)
+
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    if 'tipo' not in args:
+        return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
+
+    args['tipo'] = args['tipo'].upper()
+    if args.get('estado'):
+        args['estado'] = busca_estado_sigla(args['estado'])
+
+    dados = vidente.volatilidade_vlfob(
+        tipo=args['tipo'],
+        estado=args.get('estado'),
+        pais=args.get('pais')
+    )
+
+    return routes_utils.return_response(dados)
+
+
+@tendencias_bp.route('/regressao_linear_vlfob', methods=["GET"])
+def regressao_linear_vlfob():
+    args: dict = routes_utils.get_args(request)
+
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    if 'tipo' not in args:
+        return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
+
+    args['tipo'] = args['tipo'].upper()
+    if args.get('estado'):
+        args['estado'] = busca_estado_sigla(args['estado'])
+    dados = vidente.regressao_linear_vlfob(
+        tipo=args.get('tipo'),
+        estado=args.get('estado'),
+        pais=args.get('pais')
+    )
+    return routes_utils.return_response(dados)
+
+
+@tendencias_bp.route('/regressao_linear_balanca_comercial', methods=["GET"])
+def regressao_linear_balanca_comercial():
+    args: dict = routes_utils.get_args(request)
+
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    if args.get('estado'):
+        args['estado'] = busca_estado_sigla(args['estado'])
+
+    dados = vidente.regressao_linear_balanca_comercial(
+        estado=args.get('estado'),
+        pais=args.get('pais')
+    )
+
+    return routes_utils.return_response(dados)
+
+
+@tendencias_bp.route('/crescimento_mensal_balanca_comercial', methods=["GET"])
+def crescimento_mensal_balanca_comercial():
+    args: dict = routes_utils.get_args(request)
+
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    if args.get('estado'):
+        args['estado'] = busca_estado_sigla(args['estado'])
+
+    dados = vidente.crescimento_mensal_balanca_comercial(
+        estado=args.get('estado'),
+        pais=args.get('pais')
+    )
+    return routes_utils.return_response(dados)
+
+
+@tendencias_bp.route('/volatilidade_balanca_comercial', methods=["GET"])
+def volatilidade_balanca_comercial():
+    args: dict = routes_utils.get_args(request)
+
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    if args.get('estado'):
+        args['estado'] = busca_estado_sigla(args['estado'])
+
+    dados = vidente.volatilidade_balanca_comercial(
+        estado=args.get('estado'),
+        pais=args.get('pais')
+    )
+
+    return routes_utils.return_response(dados)
+
+
+@tendencias_bp.route('/estatisticas_auxiliares_vlfob', methods=["GET"])
+def estatisticas_auxiliares_vlfob():
+    args: dict = routes_utils.get_args(request)
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+
+    if args.get('estado'):
+        args['estado'] = busca_estado_sigla(args['estado'])
+    
+    dados = gerar_estatisticas_auxiliares_vlfob(
+        ncm = args.get('ncm'),
+        estado = args.get('estado'),
+        pais=args.get('pais')
+    )
+    print(dados)
+    return routes_utils.return_response(dados)
