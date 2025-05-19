@@ -12,10 +12,13 @@ def analise_sazonalidade(df: pd.DataFrame, ncm:int|None = None, estado:str|None=
     Realiza análise de sazonalidade dos dados de exportação e importação,
     desconsiderando registros com valores zerados, e retorna dados para gráficos.
     """
+    if ncm:
+        df = df[df['CO_NCM'] == ncm]
     if estado:
         df = df[df['SG_UF_NCM'] == estado]
     if pais:
         df = df[df['CO_PAIS'] == pais]
+    df = df.fillna(0)
     df['DATA'] = pd.to_datetime(df['DATA'])
     df['mes'] = df['DATA'].dt.month 
 
@@ -31,7 +34,7 @@ def analise_sazonalidade(df: pd.DataFrame, ncm:int|None = None, estado:str|None=
     sazonalidade = pd.DataFrame({
         'VL_FOB_EXP': exp_por_mes,
         'VL_FOB_IMP': imp_por_mes
-    }).reset_index()
+    }).fillna(0).reset_index()
 
     # Nome dos meses
     nome_meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
@@ -52,7 +55,7 @@ def analise_sazonalidade(df: pd.DataFrame, ncm:int|None = None, estado:str|None=
 
 
 def analise_hhi(
-    crit: Literal["estado", "pais"],
+    crit: Literal["estado", "pais", "ncm"],
     df: pd.DataFrame,
     ncm: int | None = None,
     estado: str | None = None,
@@ -63,17 +66,24 @@ def analise_hhi(
     com base na concentração por país ou estado.
     """
 
+    if ncm:
+        df = df[df['CO_NCM'] == ncm]
     if estado:
         df = df[df['SG_UF_NCM'] == estado]
     if pais:
         df = df[df['CO_PAIS'] == pais]
-    if ncm:
-        df = df[df['CO_NCM'] == ncm]
+    
+    df=df.fillna(0)
 
-    if crit not in ["estado", "pais"]:
+    if crit not in ["estado", "pais", "ncm"]:
         raise ValueError("O critério deve ser 'estado' ou 'pais'.")
 
-    filtro = "CO_PAIS" if crit == 'pais' else "SG_UF_NCM"
+    if crit == 'estado':
+        filtro = "SG_UF_NCM"
+    elif crit == 'pais':
+        filtro = "CO_PAIS"
+    else:
+        filtro = "CO_NCM"
 
     df['DATA'] = pd.to_datetime(df['DATA'])
 
@@ -117,18 +127,25 @@ def gerar_estatisticas_auxiliares_vlfob(ncm:int|None = None, estado:str|None=Non
     """
     Gera todos os dados para o dashboard em um único JSON com todas as análises.
     """
-    df = pd.read_csv("data_pipeline/datasets/dados_agregados/mv_balanca_comercial.csv")
-    df = df.fillna(0)
+    if ncm:
+        df = pd.read_csv('data_pipeline/datasets/dados_agregados/mv_ncm_mensal.csv')
+    else:
+        df = pd.read_csv("data_pipeline/datasets/dados_agregados/mv_balanca_comercial.csv")
 
     try:
         sazonalidade = analise_sazonalidade(df, ncm, estado, pais)
-        hhi_pais = analise_hhi(df=df, pais=pais, estado=estado, crit='pais')
-        hhi_estado = analise_hhi(df=df, pais=pais, estado=estado, crit='estado')
-        # hhi_ncm = analise_hhi(df=df, pais=pais, estado=estado, ncm=ncm)
+        hhi_pais = analise_hhi(df=df, pais=pais, estado=estado, ncm=ncm, crit='pais')
+        hhi_estado = analise_hhi(df=df, pais=pais, estado=estado, ncm=ncm, crit='estado')
+        if ncm:
+            hhi_ncm = analise_hhi(df=df, pais=pais, estado=estado, ncm=ncm, crit='ncm')
+        else:
+            df = pd.read_csv('data_pipeline/datasets/dados_agregados/mv_ncm_mensal.csv')
+            hhi_ncm = analise_hhi(df=df, pais=pais, estado=estado, ncm=ncm, crit='ncm')
         return {
             'sazonalidade': sazonalidade,
             'concentracao_pais': hhi_pais,
-            'concentracao_estado': hhi_estado
+            'concentracao_estado': hhi_estado,
+            'concentracao_ncm': hhi_ncm
         }
     except Exception as e:
         return {
