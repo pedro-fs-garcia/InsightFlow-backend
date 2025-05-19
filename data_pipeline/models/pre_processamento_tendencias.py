@@ -259,6 +259,25 @@ class PreProcessador:
         return df
         # return df.head(qtd)
 
+    def mv_ncm_mensal(self):
+        def carregar_df(tipo, path:str):
+            df = pd.read_csv(path)
+            df = df[['DATA', 'CO_NCM', 'CO_PAIS', 'SG_UF_NCM', f'VL_FOB_{tipo.upper()}']]
+            df = df.groupby(['DATA','CO_NCM', 'CO_PAIS', 'SG_UF_NCM'], as_index=False).agg({f'VL_FOB_{tipo.upper()}': 'sum'}).reset_index()
+            return df
+            
+        df_exp = carregar_df('exp', 'data_pipeline/datasets/dados_agregados/mv_ncm_mensal_exp.csv')
+        df_imp = carregar_df('imp', 'data_pipeline/datasets/dados_agregados/mv_ncm_mensal_imp.csv')
+        print("EXP:", df_exp.shape)
+        print("IMP:", df_imp.shape)
+        df = pd.concat([df_exp, df_imp], ignore_index=True)
+        df = df.groupby(['DATA','CO_NCM', 'CO_PAIS', 'SG_UF_NCM']).agg({
+            'VL_FOB_EXP': 'sum',
+            'VL_FOB_IMP': 'sum'
+        }).reset_index()
+        print(df.shape)
+        return df
+
 
     def salvar_dados_agregados(self):
         def gerar_e_salvar(func:Callable, nome:str, *args, **kwargs):
@@ -271,6 +290,7 @@ class PreProcessador:
             ("mv_ncm_mensal_imp", self.mv_ncm_mensal_estado_pais, ('IMP',)),
             ("mv_sh4_mensal", self.mv_sh4_mensal_estado_pais, ()),
             ("mv_setores_mensal", self.mv_setores_mensal_estado_pais, ()),
+            ("mv_ncm_mensal", self.mv_ncm_mensal, ())
         ]
 
         os.makedirs(self.output_dir, exist_ok=True)
