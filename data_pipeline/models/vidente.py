@@ -384,8 +384,24 @@ class Vidente():
         return df_resultado.to_dict(orient='records')
 
     # busca os ncm que mais aumentaram/diminuiram exportacao/importacao na série histórica
-    def maiores_evolucoes_ncm(self):
-        return
+    @cache
+    def maiores_evolucoes_ncm(self, tipo: Literal['EXP', 'IMP']) -> dict:
+        caminho = (
+            "data_pipeline/datasets/dados_agregados/mv_ncm_mensal_exp.csv"
+            if tipo == "EXP" else
+            "data_pipeline/datasets/dados_agregados/mv_ncm_mensal_imp.csv"
+        )
+
+        df = pd.read_csv(caminho)
+        coluna_valor = f'VL_FOB_{tipo}'
+
+        df_pivot = df.groupby(['CO_NCM', 'DATA'])[coluna_valor].sum().unstack().fillna(0)
+        variacao = ((df_pivot.iloc[:, -1] - df_pivot.iloc[:, 0]) / df_pivot.iloc[:, 0].replace(0, 1)).sort_values(ascending=False)
+
+        return {
+            f"maiores_evolucoes_{tipo.lower()}": variacao.head(10).reset_index().rename(columns={0: "crescimento"}).to_dict(orient='records'),
+            f"maiores_reducoes_{tipo.lower()}": variacao.tail(10).reset_index().rename(columns={0: "crescimento"}).to_dict(orient='records'),
+        }
     
     # busca os sh4 que mais aumentaram/diminuiram exportacao/importacao na série histórica
     def maiores_evolucoes_sh4(self):
