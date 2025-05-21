@@ -21,6 +21,36 @@ tarefas = [
     ("tendencia_valor_agregado_imp", vidente.tendencia_valor_agregado, ("IMP",)),
 ]
 
+# Exemplos de uso:
+
+# ("tendencia_vlfob_ncm_exp", vidente.tendencia_vlfob_ncm, ("EXP", "84198999.0")),
+# ("tendencia_vlfob_ncm_imp", vidente.tendencia_vlfob_ncm, ("IMP", "84198999.0")),
+
+# ("tendencia_vlfob_sh4_exp", vidente.tendencia_vlfob_sh4, ("EXP", "101")),
+# ("tendencia_vlfob_sh4_imp", vidente.tendencia_vlfob_sh4, ("IMP", "101")),
+
+# ("tendencia_vlfob_setores_exp", vidente.tendencia_vlfob_setores, ("EXP", "agronegocio")),
+# ("tendencia_vlfob_setores_imp", vidente.tendencia_vlfob_setores, ("IMP", "agronegocio")),
+
+# ("tendencia_ranking_ncm_exp", vidente.tendencia_ranking_ncm, ("EXP",)),
+# ("tendencia_ranking_ncm_imp", vidente.tendencia_ranking_ncm, ("IMP",)),
+
+# ("tendencia_ranking_sh4_exp", vidente.tendencia_ranking_sh4, ("EXP",)),
+# ("tendencia_ranking_sh4_imp", vidente.tendencia_ranking_sh4, ("IMP",)),
+
+# ("maiores_evolucoes_ncm_exp", lambda: vidente.maiores_evolucoes_ncm("EXP")["maiores_evolucoes_exp"], ()),
+# ("maiores_reducoes_ncm_exp", lambda: vidente.maiores_evolucoes_ncm("EXP")["maiores_reducoes_exp"], ()),
+
+# ("maiores_evolucoes_ncm_imp", lambda: vidente.maiores_evolucoes_ncm("IMP")["maiores_evolucoes_imp"], ()),
+# ("maiores_reducoes_ncm_imp", lambda: vidente.maiores_evolucoes_ncm("IMP")["maiores_reducoes_imp"], ()),
+
+# ("maiores_evolucoes_sh4_exp", lambda: vidente.maiores_evolucoes_sh4("EXP")["maiores_evolucoes_exp"], ()),
+# ("maiores_reducoes_sh4_exp", lambda: vidente.maiores_evolucoes_sh4("EXP")["maiores_reducoes_exp"], ()),
+
+# ("maiores_evolucoes_sh4_imp", lambda: vidente.maiores_evolucoes_sh4("IMP")["maiores_evolucoes_imp"], ()),
+# ("maiores_reducoes_sh4_imp", lambda: vidente.maiores_evolucoes_sh4("IMP")["maiores_reducoes_imp"], ()),
+
+
 def salvar_tendencias_sequencial():
     for nome, func, args in tarefas:
         try:
