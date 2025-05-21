@@ -331,8 +331,22 @@ class Vidente():
 
         return self.gerar_profecia(df_prophet, nome, f"Previsão de Valor FOB ({tipo}) - SH4 {sh4}", f"Valor FOB {tipo} ($)")
     
-    def tendencia_ranking_ncm(self):
-        return
+    @cache
+    def tendencia_vlfob_setores(self, tipo: Literal['EXP', 'IMP'], setor: str) -> List[dict]:
+        app_logger.info(f"Iniciando análise de tendência de VL_FOB por setor '{setor}' usando mv_setores_mensal")
+
+        caminho_csv = "data_pipeline/datasets/dados_agregados/mv_setores_mensal.csv"
+        df = pd.read_csv(caminho_csv)
+
+        coluna_valor = f"VL_FOB_{tipo}"
+        df = df.groupby('DATA')[[coluna_valor]].sum().reset_index()
+        df_prophet = df.rename(columns={'DATA': 'ds', coluna_valor: 'y'})
+        df_prophet['y'] = df_prophet['y'].fillna(0)
+
+        nome = f"tendencia_vlfob_{tipo.lower()}_{setor.lower().replace(' ', '_')}"
+
+        return self.gerar_profecia(df_prophet, nome, f"Previsão de Valor FOB ({tipo}) - Setor {setor.title()}", f"Valor FOB {tipo} ($)")
+
     
     def tendencia_ranking_sh4(self):
         return
