@@ -367,6 +367,21 @@ class Vidente():
         ).reset_index(drop=True)
 
         return df_resultado.to_dict(orient='records')
+    
+    @cache
+    def tendencia_ranking_sh4(self, tipo: Literal['EXP', 'IMP']) -> List[dict]:
+        caminho_csv = "data_pipeline/datasets/dados_agregados/mv_sh4_mensal.csv"
+        df = pd.read_csv(caminho_csv)
+        coluna_valor = f'VL_FOB_{tipo}'
+
+        df = df.groupby(['DATA', 'CO_SH4'])[coluna_valor].sum().reset_index()
+        df['tipo'] = tipo
+
+        df_resultado = df.groupby(['DATA', 'tipo']).apply(
+            lambda x: x.sort_values(coluna_valor, ascending=False).head(10)
+        ).reset_index(drop=True)
+
+        return df_resultado.to_dict(orient='records')
 
     # busca os ncm que mais aumentaram/diminuiram exportacao/importacao na série histórica
     def maiores_evolucoes_ncm(self):
