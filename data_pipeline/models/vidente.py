@@ -289,8 +289,28 @@ class Vidente():
         return self.gerar_profecia(df_prophet, nome, f"Previsão de Valor Agregado médio de {tipo}", f"Valor Agregado médio {tipo} ($)")
 
 
-    def tendencia_vlfob_ncm(self):
-        return
+    @cache
+    def tendencia_vlfob_ncm(self, tipo: Literal['EXP', 'IMP'], ncm: str) -> List[dict]:
+        app_logger.info(f"Iniciando análise de tendência de VL_FOB por NCM {ncm} usando novo CSV")
+        
+        caminho_csv = (
+            "data_pipeline/datasets/dados_agregados/mv_ncm_mensal_exp.csv"
+            if tipo == "EXP" else
+            "data_pipeline/datasets/dados_agregados/mv_ncm_mensal_imp.csv"
+        )
+        
+        df = pd.read_csv(caminho_csv)
+        df['CO_NCM'] = df['CO_NCM'].astype(str)
+        df = df[df['CO_NCM'] == str(ncm)]
+
+        coluna_valor = f"VL_FOB_{tipo}"
+        df = df.groupby('DATA')[[coluna_valor]].sum().reset_index()
+        df_prophet = df.rename(columns={'DATA': 'ds', coluna_valor: 'y'})
+        df_prophet['y'] = df_prophet['y'].fillna(0)
+
+        nome = f"tendencia_vlfob_{tipo.lower()}_ncm{ncm}"
+
+        return self.gerar_profecia(df_prophet, nome, f"Previsão de Valor FOB ({tipo}) - NCM {ncm}", f"Valor FOB {tipo} ($)")
     
     def tendencia_vlfob_setores(self):
         return
