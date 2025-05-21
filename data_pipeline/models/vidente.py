@@ -348,8 +348,25 @@ class Vidente():
         return self.gerar_profecia(df_prophet, nome, f"Previsão de Valor FOB ({tipo}) - Setor {setor.title()}", f"Valor FOB {tipo} ($)")
 
     
-    def tendencia_ranking_sh4(self):
-        return
+    @cache
+    def tendencia_ranking_ncm(self, tipo: Literal['EXP', 'IMP']) -> List[dict]:
+        caminho = (
+            "data_pipeline/datasets/dados_agregados/mv_ncm_mensal_exp.csv"
+            if tipo == "EXP" else
+            "data_pipeline/datasets/dados_agregados/mv_ncm_mensal_imp.csv"
+        )
+
+        df = pd.read_csv(caminho)
+        coluna_valor = f'VL_FOB_{tipo}'
+
+        df = df.groupby(['DATA', 'CO_NCM'])[coluna_valor].sum().reset_index()
+        df['tipo'] = tipo
+
+        df_resultado = df.groupby(['DATA', 'tipo']).apply(
+            lambda x: x.sort_values(coluna_valor, ascending=False).head(10)
+        ).reset_index(drop=True)
+
+        return df_resultado.to_dict(orient='records')
 
     # busca os ncm que mais aumentaram/diminuiram exportacao/importacao na série histórica
     def maiores_evolucoes_ncm(self):
