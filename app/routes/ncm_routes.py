@@ -33,8 +33,8 @@ def busca_transacoes_por_ncm():
     if 'tipo' not in args.keys():
         return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
         
-    if 'ncm' not in args.keys():
-        return jsonify({'error': "Erro na requisição: Parâmetro 'ncm' é obrigatório."}), 400
+    # if 'ncm' not in args.keys():
+    #     return jsonify({'error': "Erro na requisição: Parâmetro 'ncm' é obrigatório."}), 400
     try:
         transacoes_ncm = ncm_dao.busca_transacoes_por_ncm(**args)
         return routes_utils.return_response(transacoes_ncm)

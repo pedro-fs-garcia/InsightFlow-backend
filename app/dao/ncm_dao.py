@@ -9,8 +9,8 @@ from app.utils.logging_config import app_logger, error_logger
 
 
 def busca_transacoes_por_ncm(
-        ncm: int,
         tipo: Literal['imp', 'exp'],
+        ncm: int = None,
         qtd: int = 25,
         paises: List[int] = None,
         estados: List[int] = None,
@@ -204,6 +204,8 @@ def busca_ncm_hist(
         urfs: List[int] | None = None
     ) -> List[dict]:
     try:
+        if isinstance(ncm, tuple) and ncm is not None:
+            ncm = ncm[0]
         with get_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 where_statement = build_where(anos=anos, meses=meses, paises=paises, estados=estados, vias=vias, urfs=urfs, ncm=ncm)

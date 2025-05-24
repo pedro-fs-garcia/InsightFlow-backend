@@ -62,6 +62,38 @@ def busca_transacao_por_id(id_transacao:int, tipo:Literal['imp', 'exp']):
         return None
 
 
+@cache
+def info_geral(
+    tipo: Literal['imp', 'exp'],
+    ncm: int = None,
+    paises: List[int] = None,
+    estados: List[int] = None,
+    anos : List[int] = None,
+    vias: List[int] = None,
+    urfs: List[int] = None,
+):
+    where_statement = build_where(anos=anos, paises=paises, estados=estados, vias=vias, urfs=urfs, ncm=ncm)
+    if ncm: where_statement = where_statement.replace('produto.id_ncm', 'id_produto')
+    select_statement = "SUM(valor_fob) as total_valor_fob, SUM(kg_liquido) as total_kg_liquido"
+    if tipo == 'imp':
+        select_statement += ", SUM(valor_seguro) as total_valor_seguro, SUM(valor_frete) as total_valor_frete"
+    try:
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                query = f"""
+                    SELECT {select_statement}
+                    FROM {tipo}ortacao_estado
+                    {where_statement}
+                """
+                cur.execute(query)
+                res = cur.fetchall()
+                app_logger.info(f"Informações gerais buscadas com sucesso")
+                return [dict(row) for row in res]
+    except (Error, OperationalError) as e:
+        error_logger.error(f"Erro ao buscar informações gerais no banco de dados")
+        return None
+
+
 def build_query_hhi(
     tipo: Literal['exp', 'imp'],
     crit: Literal['pais', 'estado', 'ncm'],
@@ -152,4 +184,34 @@ def busca_hist(tipo:Literal['exp','imp'], estado:int|None=None, pais:int|None=No
                 return [dict(row) for row in res]
     except (Error, OperationalError) as e:
         error_logger.error(f'busca_hist: Erro ao buscar histórico sem ncm no banco de dados: {str(e)}')
+        return None
+    
+
+def hist_geral(
+    tipo: Literal['imp', 'exp'],
+    ncm: int = None,
+    paises: List[int] = None,
+    estados: List[int] = None,
+    anos : List[int] = None,
+    vias: List[int] = None,
+    urfs: List[int] = None,
+):
+    where_statement = build_where(anos=anos, paises=paises, estados=estados, vias=vias, urfs=urfs, ncm=ncm)
+    if ncm: where_statement = where_statement.replace('produto.id_ncm', 'id_produto')
+    select_statement = "SUM(valor_fob) as total_valor_fob, SUM(kg_liquido) as total_kg_liquido"
+    try:
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                query = f"""
+                    SELECT ano, mes, {select_statement}
+                    FROM {tipo}ortacao_estado
+                    {where_statement}
+                    GROUP BY ano, mes
+                """
+                cur.execute(query)
+                res = cur.fetchall()
+                app_logger.info(f"Informações gerais buscadas com sucesso")
+                return [dict(row) for row in res]
+    except (Error, OperationalError) as e:
+        error_logger.error(f"Erro ao buscar informações gerais no banco de dados")
         return None

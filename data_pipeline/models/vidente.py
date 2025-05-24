@@ -63,6 +63,34 @@ class Vidente():
 
         app_logger.info(f"Análise de tendências {nome_arquivo} finalizada")
         return resultado.to_dict(orient='records')
+    
+
+    def gerar_profecia_json(self, df_prophet):
+        if len(df_prophet) < 2:
+            print("Dados insuficientes para modelagem.")
+            return
+
+        df = df_prophet.copy()
+        df['ds'] = pd.to_datetime(df['ds'])
+        df.set_index('ds', inplace=True)
+        df = df.asfreq('MS')  #frequência mensal com início no início do mês
+        df['y'] = df['y'].interpolate() 
+
+        modelo = SARIMAX(df['y'], order=(1,1,1), seasonal_order=(1,1,0,12), enforce_stationarity=False, enforce_invertibility=False)
+        modelo_fit = modelo.fit(disp=False)
+
+        n_periods = 24
+        future_index = pd.date_range(start=df.index[-1] + MonthEnd(1), periods=n_periods, freq='MS')
+        previsoes = modelo_fit.forecast(steps=n_periods)
+
+        df_previsao = pd.concat([df['y'], pd.Series(previsoes, index=future_index)], axis=0)
+
+        resultado = df_previsao.reset_index()
+        resultado.columns = ['ds', 'yhat']
+        resultado['ds'] = resultado['ds'].astype(str)
+
+        app_logger.info(f"Análise de tendências finalizada")
+        return resultado.to_dict(orient='records')
 
 
     @cache

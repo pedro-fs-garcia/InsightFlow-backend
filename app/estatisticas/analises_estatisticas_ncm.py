@@ -27,6 +27,7 @@ def dataframe_vlfob_ncm(tipo:Literal['exp', 'imp'], ncm:int|None = None, estado:
                 f'VL_FOB_{tipo.upper()}':row.get('total_valor_fob')
             }
         )
+    if not ncm_dict_filtrado: return None
     df = pd.DataFrame(ncm_dict_filtrado)
     df[f'VL_FOB_{tipo.upper()}'] = df[f'VL_FOB_{tipo.upper()}'].astype(float)
     df['DATA'] = pd.to_datetime(df['ano'].astype(str) + '-' + df['mes'].astype(str).str.zfill(2))
@@ -92,6 +93,7 @@ def dataframe_va_ncm(tipo:Literal['exp', 'imp'], ncm:int, estado:int|None=None, 
 
 def previsao_tendencia_vlfob_ncm (tipo:Literal['exp', 'imp'], ncm:int, estado:int|None=None, pais:int|None=None):
     df = dataframe_vlfob_ncm(tipo, ncm, estado, pais)
+    tipo=tipo.upper()
     df = df.groupby('DATA')[[f'VL_FOB_{tipo}']].sum().reset_index()
     df_prophet = df[['DATA', f'VL_FOB_{tipo}']].rename(columns={'DATA': 'ds', f'VL_FOB_{tipo}': 'y'})
     df_prophet['y'] = df_prophet['y'].fillna(0)
@@ -106,6 +108,7 @@ def previsao_tendencia_vlfob_ncm (tipo:Literal['exp', 'imp'], ncm:int, estado:in
 
 def previsao_tendencia_balanca_ncm(ncm:int, estado:int|None=None, pais:int|None=None):
     df = dataframe_balanca_ncm(ncm, estado, pais)
+    if df is None : return None
     df = df.groupby('DATA')[['balanca_comercial']].sum().reset_index()
     df_prophet = df[['DATA', 'balanca_comercial']].rename(columns={'DATA': 'ds', 'balanca_comercial': 'y'})
     df_prophet['y'] = df_prophet['y'].fillna(0)
@@ -121,6 +124,7 @@ def previsao_tendencia_balanca_ncm(ncm:int, estado:int|None=None, pais:int|None=
 
 def previsao_tendencia_va_ncm(tipo:Literal['exp', 'imp'], ncm:int, estado:int|None=None, pais:int|None=None):
     df = dataframe_va_ncm(tipo, ncm, estado, pais)
+    if df is None : return None
     df = df.groupby('DATA')[[f'VL_FOB_{tipo}', f'KG_LIQUIDO_{tipo}']].sum().reset_index()
     df['valor_agregado'] = df[f'VL_FOB_{tipo}'] / df[f'KG_LIQUIDO_{tipo}']
     df_prophet = df[['DATA', 'valor_agregado']].rename(columns={'DATA': 'ds', 'valor_agregado': 'y'})
@@ -137,6 +141,7 @@ def previsao_tendencia_va_ncm(tipo:Literal['exp', 'imp'], ncm:int, estado:int|No
 
 def regressao_linear_vlfob_ncm(tipo:Literal['exp', 'imp'], ncm:int, estado:int|None=None, pais:int|None=None):
     df = dataframe_vlfob_ncm(tipo, ncm, estado, pais)
+    if df is None : return None
     tipo = tipo.upper()
     df['timestamp'] = df['DATA'].map(pd.Timestamp.timestamp)
     X = df[['timestamp']]
@@ -158,22 +163,25 @@ def regressao_linear_vlfob_ncm(tipo:Literal['exp', 'imp'], ncm:int, estado:int|N
 
 
 def crescimento_mensal_vlfob_ncm(tipo:Literal['exp', 'imp'], ncm:int, estado:int|None=None, pais:int|None=None):
-    df = dataframe_vlfob_ncm(tipo, ncm, estado, pais)
-    tipo = tipo.upper()
-    df['crescimento'] = df[f'VL_FOB_{tipo}'].pct_change().fillna(0) * 100
-    df_resultado = df[['DATA', 'crescimento']].rename(columns={'DATA': 'ds', 'crescimento': 'y'})
-    nome = f"tendencia_crescimento_mensal_vlfob_{tipo.lower()}"
-    if estado:
-        nome += f"_e{estado}"
-    if pais:
-        nome += f"_p{pais}"
-    vidente = Vidente()
-    return vidente.gerar_profecia(df_resultado, nome, "Crescimento Mensal do Valor Fob", f"Taxa de crescimento {tipo}")
-
+    try:
+        df = dataframe_vlfob_ncm(tipo, ncm, estado, pais)
+        if df is None : return None
+        tipo = tipo.upper()
+        df['crescimento'] = df[f'VL_FOB_{tipo}'].pct_change().fillna(0) * 100
+        df_resultado = df[['DATA', 'crescimento']].rename(columns={'DATA': 'ds', 'crescimento': 'y'})
+        nome = f"tendencia_crescimento_mensal_vlfob_{tipo.lower()}"
+        if estado:
+            nome += f"_e{estado}"
+        if pais:
+            nome += f"_p{pais}"
+        vidente = Vidente()
+        return vidente.gerar_profecia(df_resultado, nome, "Crescimento Mensal do Valor Fob", f"Taxa de crescimento {tipo}")
+    except:
+        return None
 
 def volatilidade_vlfob_ncm(tipo:Literal['exp', 'imp'], ncm:int, estado:int|None=None, pais:int|None=None):
     df = dataframe_vlfob_ncm(tipo, ncm, estado, pais)
-    if df is None: return None
+    if df is None : return None
     tipo = tipo.upper()
     df['volatilidade'] = df[f'VL_FOB_{tipo}'].rolling(window=6).std().fillna(0)
     df_resultado = df[['DATA', 'volatilidade']].rename(columns={'DATA': 'ds', 'volatilidade': 'y'})
@@ -188,6 +196,7 @@ def volatilidade_vlfob_ncm(tipo:Literal['exp', 'imp'], ncm:int, estado:int|None=
 
 def regressao_linear_balanca_ncm(ncm:int, estado:int|None=None, pais:int|None=None):
     df = dataframe_balanca_ncm(ncm, estado, pais)
+    if df is None : return None
     if df is None: return None
     df['timestamp'] = df['DATA'].map(pd.Timestamp.timestamp)
     X = df[['timestamp']]
@@ -210,6 +219,7 @@ def regressao_linear_balanca_ncm(ncm:int, estado:int|None=None, pais:int|None=No
 
 def crescimento_mensal_balanca_ncm(ncm:int, estado:int|None=None, pais:int|None=None):
     df = dataframe_balanca_ncm(ncm, estado, pais)
+    if df is None : return None
     df['crescimento'] = df[f'balanca_comercial'].pct_change().fillna(0) * 100
     df_resultado = df[['DATA', 'crescimento']].rename(columns={'DATA': 'ds', 'crescimento': 'y'})
     nome = f"tendencia_crescimento_mensal_balanca"
@@ -223,6 +233,7 @@ def crescimento_mensal_balanca_ncm(ncm:int, estado:int|None=None, pais:int|None=
 
 def volatilidade_balanca_ncm(ncm:int, estado:int|None=None, pais:int|None=None):
     df = dataframe_balanca_ncm(ncm, estado, pais)
+    if df is None : return None
     df['volatilidade'] = df[f'balanca_comercial'].rolling(window=6).std().fillna(0)
     df_resultado = df[['DATA', 'volatilidade']].rename(columns={'DATA': 'ds', 'volatilidade': 'y'})
     nome = f"tendencia_volatilidade_balanca"
@@ -236,6 +247,7 @@ def volatilidade_balanca_ncm(ncm:int, estado:int|None=None, pais:int|None=None):
 
 def sazonalidade_ncm(ncm:int|None = None, estado:str|None=None, pais:str|None=None):
     df = dataframe_balanca_ncm(ncm, estado, pais)
+    if df is None : return None
     df['mes'] = df['DATA'].dt.month 
 
     # Filtra valores maiores que zero
@@ -272,6 +284,7 @@ def sazonalidade_ncm(ncm:int|None = None, estado:str|None=None, pais:str|None=No
 def analise_hhi_ncm(crit: Literal["estado", "pais", "ncm"], ncm: int | None = None, estado: str | None = None, pais: int | None = None):
     print("\nfunc analise_hhi_ncm")
     df = dataframe_hhi(crit, ncm, estado, pais)
+    if df is None : return None
     print(df.columns)
     print("\ndataframe de hhi criado com sucesso")
     if crit == 'estado':
