@@ -9,8 +9,8 @@ from app.utils.logging_config import app_logger, error_logger
 
 
 def busca_transacoes_por_ncm(
-        ncm: int,
         tipo: Literal['imp', 'exp'],
+        ncm: int = None,
         qtd: int = 25,
         paises: List[int] = None,
         estados: List[int] = None,
@@ -63,87 +63,136 @@ def busca_transacoes_por_ncm(
 
 
 def busca_por_ncm(
-        ncm:List[int],
-        anos:List[int] | None = None,
-        meses:List[int] | None = None,
-        paises:List[int] | None = None,
-        vias:List[int] | None = None,
-        urfs:List[int] | None = None
-    ) -> List[dict]:
+    ncm: List[int],
+    anos: List[int] | None = None,
+    meses: List[int] | None = None,
+    estados: List[int] | None = None,
+    paises: List[int] | None = None,
+    vias: List[int] | None = None,
+    urfs: List[int] | None = None
+) -> List[dict]:
     try:
         with get_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
-                where_statement = build_where(anos=anos, meses=meses, paises=paises, vias=vias, urfs=urfs, ncm=ncm)
-                
-                # Se não houver filtro por mês, usar a view materializada
-                if not meses and not vias and not urfs:
-                    if 'ano' in where_statement:
-                        where_statement = where_statement.replace('ano', 'mv_exportacao_estado_anual.ano')
-                    
+                where_statement = build_where(
+                    anos=anos, meses=meses, paises=paises,
+                    estados=estados, vias=vias, urfs=urfs
+                )
+
+                filtro_ncm = f"WHERE id_produto IN ({', '.join(map(str, ncm))})"
+                if where_statement:
+                    where_export = f"{filtro_ncm} AND " + where_statement.replace('WHERE', '').replace('ano', 'e.ano').replace('mes', 'e.mes').replace('id_modal_transporte', 'e.id_modal_transporte').replace('id_unidade_receita_federal', 'e.id_unidade_receita_federal')
+                    where_import = f"{filtro_ncm} AND " + where_statement.replace('WHERE', '').replace('ano', 'i.ano').replace('mes', 'i.mes').replace('id_modal_transporte', 'i.id_modal_transporte').replace('id_unidade_receita_federal', 'i.id_unidade_receita_federal')
+                else:
+                    where_export = filtro_ncm
+                    where_import = filtro_ncm
+
+                if not vias and not urfs and meses:
                     query = f"""
-                        SELECT produto.descricao AS produto_descricao,
-                            sh4.descricao AS sh4_descricao,
-                            SUM(mv_exportacao_estado_anual.valor_fob_total) AS total_valor_fob_exp,
-                            SUM(mv_exportacao_estado_anual.kg_liquido_total) AS total_kg_liquido_exp,
-                            CAST(SUM(mv_exportacao_estado_anual.valor_fob_total)/NULLIF(SUM(mv_exportacao_estado_anual.kg_liquido_total), 0) AS DECIMAL(15,2)) AS total_valor_agregado_exp,
-                            
-                            SUM(mv_importacao_estado_anual.valor_fob_total) AS total_valor_fob_imp,
-                            SUM(mv_importacao_estado_anual.kg_liquido_total) AS total_kg_liquido_imp,
-                            SUM(mv_importacao_estado_anual.valor_seguro_total) AS total_valor_seguro_imp,
-                            SUM(mv_importacao_estado_anual.valor_frete_total) AS total_valor_frete_imp,
-                            CAST(SUM(mv_importacao_estado_anual.valor_fob_total)/NULLIF(SUM(mv_importacao_estado_anual.kg_liquido_total), 0) AS DECIMAL(15,2)) AS total_valor_agregado_imp            
-                        FROM produto 
-                        LEFT JOIN mv_exportacao_estado_anual ON mv_exportacao_estado_anual.id_produto = produto.id_ncm
-                        LEFT JOIN mv_importacao_estado_anual ON mv_importacao_estado_anual.id_produto = produto.id_ncm
-                        JOIN sh4 ON sh4.id_sh4 = produto.id_sh4
-                        {where_statement}
-                        GROUP BY produto.id_ncm, sh4.id_sh4
+                        SELECT 
+                            p.descricao AS produto_descricao,
+                            s.descricao AS sh4_descricao,
+
+                            COALESCE(e.total_valor_fob_exp, 0) AS total_valor_fob_exp,
+                            COALESCE(e.total_kg_liquido_exp, 0) AS total_kg_liquido_exp,
+                            CASE WHEN e.total_kg_liquido_exp = 0 THEN NULL 
+                                ELSE ROUND(e.total_valor_fob_exp / e.total_kg_liquido_exp, 2)
+                            END AS total_valor_agregado_exp,
+
+                            COALESCE(i.total_valor_fob_imp, 0) AS total_valor_fob_imp,
+                            COALESCE(i.total_kg_liquido_imp, 0) AS total_kg_liquido_imp,
+                            COALESCE(i.total_valor_seguro_imp, 0) AS total_valor_seguro_imp,
+                            COALESCE(i.total_valor_frete_imp, 0) AS total_valor_frete_imp,
+                            CASE WHEN i.total_kg_liquido_imp = 0 THEN NULL 
+                                ELSE ROUND(i.total_valor_fob_imp / i.total_kg_liquido_imp, 2)
+                            END AS total_valor_agregado_imp
+
+                        FROM produto p
+                        JOIN sh4 s ON s.id_sh4 = p.id_sh4
+
+                        LEFT JOIN (
+                            SELECT id_produto,
+                                SUM(valor_fob_total) AS total_valor_fob_exp,
+                                SUM(kg_liquido_total) AS total_kg_liquido_exp
+                            FROM mv_exportacao_estado_anual e
+                            {where_export}
+                            GROUP BY id_produto
+                        ) e ON e.id_produto = p.id_ncm
+
+                        LEFT JOIN (
+                            SELECT id_produto,
+                                SUM(valor_fob_total) AS total_valor_fob_imp,
+                                SUM(kg_liquido_total) AS total_kg_liquido_imp,
+                                SUM(valor_seguro_total) AS total_valor_seguro_imp,
+                                SUM(valor_frete_total) AS total_valor_frete_imp
+                            FROM mv_importacao_estado_anual i
+                            {where_import}
+                            GROUP BY id_produto
+                        ) i ON i.id_produto = p.id_ncm
+
+                        WHERE p.id_ncm IN ({', '.join(map(str, ncm))})
                     """
                 else:
-                    # Usar a tabela original se houver filtro por mês
-                    if 'ano' in where_statement:
-                        where_statement = where_statement.replace('ano', 'exportacao_estado.ano')
-                    if 'mes' in where_statement:
-                        where_statement = where_statement.replace('mes', 'exportacao_estado.mes')
-                    if 'id_modal_transporte' in where_statement:
-                        where_statement = where_statement.replace('id_modal_transporte', 'exportacao_estado.id_modal_transporte')
-                    if 'id_unidade_receita_federal' in where_statement:
-                        where_statement = where_statement.replace('id_unidade_receita_federal', 'exportacao_estado.id_unidade_receita_federal')
-                    print(where_statement)
                     query = f"""
-                        SELECT produto.descricao AS produto_descricao,
-                            sh4.descricao AS sh4_descricao,
-                            SUM(exportacao_estado.valor_fob) AS total_valor_fob_exp,
-                            SUM(exportacao_estado.kg_liquido) AS total_kg_liquido_exp,
-                            CAST(SUM(exportacao_estado.valor_fob)/NULLIF(SUM(exportacao_estado.kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado_exp,
-                            
-                            SUM(importacao_estado.valor_fob) AS total_valor_fob_imp,
-                            SUM(importacao_estado.kg_liquido) AS total_kg_liquido_imp,
-                            SUM(importacao_estado.valor_seguro) AS total_valor_seguro_imp,
-                            SUM(importacao_estado.valor_frete) AS total_valor_frete_imp,
-                            CAST(SUM(importacao_estado.valor_fob)/NULLIF(SUM(importacao_estado.kg_liquido), 0) AS DECIMAL(15,2)) AS total_valor_agregado_imp            
-                        FROM produto 
-                        LEFT JOIN exportacao_estado ON exportacao_estado.id_produto = produto.id_ncm
-                        LEFT JOIN importacao_estado ON importacao_estado.id_produto = produto.id_ncm
-                        JOIN sh4 ON sh4.id_sh4 = produto.id_sh4
-                        {where_statement}
-                        GROUP BY produto.id_ncm, sh4.id_sh4
+                        SELECT 
+                            p.descricao AS produto_descricao,
+                            s.descricao AS sh4_descricao,
+
+                            COALESCE(e.total_valor_fob_exp, 0) AS total_valor_fob_exp,
+                            COALESCE(e.total_kg_liquido_exp, 0) AS total_kg_liquido_exp,
+                            CASE WHEN e.total_kg_liquido_exp = 0 THEN NULL 
+                                ELSE ROUND(e.total_valor_fob_exp / e.total_kg_liquido_exp, 2)
+                            END AS total_valor_agregado_exp,
+
+                            COALESCE(i.total_valor_fob_imp, 0) AS total_valor_fob_imp,
+                            COALESCE(i.total_kg_liquido_imp, 0) AS total_kg_liquido_imp,
+                            COALESCE(i.total_valor_seguro_imp, 0) AS total_valor_seguro_imp,
+                            COALESCE(i.total_valor_frete_imp, 0) AS total_valor_frete_imp,
+                            CASE WHEN i.total_kg_liquido_imp = 0 THEN NULL 
+                                ELSE ROUND(i.total_valor_fob_imp / i.total_kg_liquido_imp, 2)
+                            END AS total_valor_agregado_imp
+
+                        FROM produto p
+                        JOIN sh4 s ON s.id_sh4 = p.id_sh4
+
+                        LEFT JOIN (
+                            SELECT id_produto,
+                                SUM(valor_fob) AS total_valor_fob_exp,
+                                SUM(kg_liquido) AS total_kg_liquido_exp
+                            FROM exportacao_estado e
+                            {where_export}
+                            GROUP BY id_produto
+                        ) e ON e.id_produto = p.id_ncm
+
+                        LEFT JOIN (
+                            SELECT id_produto,
+                                SUM(valor_fob) AS total_valor_fob_imp,
+                                SUM(kg_liquido) AS total_kg_liquido_imp,
+                                SUM(valor_seguro) AS total_valor_seguro_imp,
+                                SUM(valor_frete) AS total_valor_frete_imp
+                            FROM importacao_estado i
+                            {where_import}
+                            GROUP BY id_produto
+                        ) i ON i.id_produto = p.id_ncm
+
+                        WHERE p.id_ncm IN ({', '.join(map(str, ncm))})
                     """
+
                 inicio = time.time()
-                cur.execute(query)  
-                results = [dict(row)for row in cur.fetchall()]
+                cur.execute(query)
+                results = [dict(row) for row in cur.fetchall()]
                 fim = time.time()
 
-                tempo = f"Tempo de execução: {fim - inicio:.4f} segundos"
-                app_logger.info(f"Busca por ncm {ncm} concluída com sucesso. {tempo}")
+                app_logger.info(f"Busca por ncm {ncm} concluída com sucesso. Tempo de execução: {fim - inicio:.4f} segundos")
                 return results
-    
+
     except (Error, OperationalError) as e:
         error_logger.error(f'Erro ao buscar NCM {ncm} no banco de dados: {str(e)}')
         return None
 
 
 
+@cache
 def busca_ncm_hist(
         tipo:Literal['exp', 'imp'], 
         ncm:List[int], 
@@ -155,6 +204,8 @@ def busca_ncm_hist(
         urfs: List[int] | None = None
     ) -> List[dict]:
     try:
+        if isinstance(ncm, tuple) and ncm is not None:
+            ncm = ncm[0]
         with get_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 where_statement = build_where(anos=anos, meses=meses, paises=paises, estados=estados, vias=vias, urfs=urfs, ncm=ncm)

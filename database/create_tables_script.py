@@ -169,9 +169,11 @@ CREATE TABLE IF NOT EXISTS exportacao_municipio (
 
 CREATE INDEX IF NOT EXISTS idx_ano_id_produto ON exportacao_estado(ano, id_produto);
 CREATE INDEX IF NOT EXISTS idx_ano_mes_estado ON exportacao_estado(ano, mes, id_estado);
+CREATE INDEX IF NOT EXISTS idx_produto_ano_mes ON exportacao_estado(id_produto, ano, mes);
 CREATE INDEX IF NOT EXISTS idx_ano_mes_pais ON exportacao_estado(ano, mes, id_pais);
 CREATE INDEX IF NOT EXISTS idx_ano_mes_estado_imp ON importacao_estado(ano, mes, id_estado);
 CREATE INDEX IF NOT EXISTS idx_ano_mes_pais_imp ON importacao_estado(ano, mes, id_pais);
+CREATE INDEX IF NOT EXISTS idx_produto_ano_mes_imp ON importacao_estado(id_produto, ano, mes);
 CREATE INDEX IF NOT EXISTS idx_ano_mes_municipio_exp ON exportacao_municipio(ano, mes, id_municipio);
 CREATE INDEX IF NOT EXISTS idx_ano_mes_municipio_imp ON importacao_municipio(ano, mes, id_municipio);
 CREATE INDEX IF NOT EXISTS idx_produto_sh4 ON produto(id_sh4);
@@ -180,8 +182,9 @@ CREATE INDEX IF NOT EXISTS idx_municipio_estado ON municipio(id_estado);
 CREATE INDEX IF NOT EXISTS idx_pais_bloco ON pais(id_bloco);
 
 CREATE EXTENSION IF NOT EXISTS unaccent;
+'''
 
--- Views Materializadas para consultas comuns
+cria_mv_exportacao_estado_anual = """
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_exportacao_estado_anual AS
 SELECT 
     ano,
@@ -195,6 +198,10 @@ SELECT
 FROM exportacao_estado
 GROUP BY ano, id_estado, id_produto, id_pais;
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_exportacao_estado_anual ON mv_exportacao_estado_anual(ano, id_estado, id_produto, id_pais);
+"""
+
+cria_mv_importacao_estado_anual = """
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_importacao_estado_anual AS
 SELECT 
     ano,
@@ -210,7 +217,10 @@ SELECT
 FROM importacao_estado
 GROUP BY ano, id_estado, id_produto, id_pais;
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_importacao_estado_anual ON mv_importacao_estado_anual(ano, id_estado, id_produto, id_pais);
+"""
 
+cria_mv_balanca_comercial = """
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_balanca_comercial AS
 WITH exp AS (
     SELECT
@@ -248,29 +258,14 @@ FULL OUTER JOIN imp
     AND exp.id_estado = imp.id_estado
 ORDER BY ano, mes;
 
-
 -- Índices para as views materializadas
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_exportacao_estado_anual ON mv_exportacao_estado_anual(ano, id_estado, id_produto, id_pais);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_importacao_estado_anual ON mv_importacao_estado_anual(ano, id_estado, id_produto, id_pais);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_balanca_comercial_unique ON mv_balanca_comercial (ano, mes, id_pais, id_estado);
+"""
 
--- Função para atualizar as views materializadas
-CREATE OR REPLACE FUNCTION atualizar_views_materializadas()
-RETURNS void AS $$
-BEGIN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_exportacao_estado_anual;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_importacao_estado_anual;
-    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_balanca_comercial;
-
-END;
-$$ LANGUAGE plpgsql;
-
-
-'''
-
-
-cria_mv_setores = """
+cria_mv_vlfob_setores = """
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_vlfob_setores AS
 WITH exportacoes AS (
     SELECT 
@@ -309,12 +304,103 @@ FULL OUTER JOIN importacoes i
     ON e.id_sh4 = i.id_sh4 AND e.ano = i.ano AND e.id_estado = i.id_estado  ;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_vlfob_setores ON mv_vlfob_setores (id_sh4, ano, id_estado);
+"""
 
-    CREATE OR REPLACE FUNCTION atualizar_mv_vlfob_setores()
+cria_mv_tendencia_saldo_setores = """
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_tendencia_saldo_setores AS
+WITH dados_mensais AS (
+    SELECT 
+        p.id_sh4,
+        e.ano,
+        e.mes,
+        COALESCE(SUM(e.valor_fob), 0) AS valor_fob_exp,
+        COALESCE(SUM(i.valor_fob), 0) AS valor_fob_imp
+    FROM produto p
+    LEFT JOIN exportacao_estado e ON e.id_produto = p.id_ncm
+    LEFT JOIN importacao_estado i ON i.id_produto = p.id_ncm
+    GROUP BY p.id_sh4, e.ano, e.mes
+)
+SELECT 
+    id_sh4,
+    ano,
+    mes,
+    valor_fob_exp - valor_fob_imp AS saldo
+FROM dados_mensais
+ORDER BY id_sh4, ano, mes;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_tendencia_saldo_setores ON mv_tendencia_saldo_setores (id_sh4, ano, mes);
+
+"""
+
+atualiza_mv_exportacao_estado_anual = """
+CREATE OR REPLACE FUNCTION atualizar_mv_exportacao_estado_anual()
+RETURNS void AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_exportacao_estado_anual;
+END;
+$$ LANGUAGE plpgsql;
+"""
+
+atualiza_mv_importacao_estado_anual = """
+CREATE OR REPLACE FUNCTION atualizar_mv_importacao_estado_anual()
+RETURNS void AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_importacao_estado_anual;
+END;
+$$ LANGUAGE plpgsql;
+"""
+
+atualiza_mv_balanca_comercial = """
+CREATE OR REPLACE FUNCTION atualizar_mv_balanca_comercial()
+RETURNS void AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_balanca_comercial;
+END;
+$$ LANGUAGE plpgsql;
+"""
+
+atualiza_mv_vlfob_setores = """
+CREATE OR REPLACE FUNCTION atualizar_mv_vlfob_setores()
 RETURNS void AS $$
 BEGIN
     REFRESH MATERIALIZED VIEW CONCURRENTLY mv_vlfob_setores;
 
+END;
+$$ LANGUAGE plpgsql;
+"""
+
+atualiza_mv_tendencia_saldo_setores = """
+CREATE OR REPLACE FUNCTION atualizar_mv_tendencia_saldo_setores()
+RETURNS void AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_tendencia_saldo_setores;
+END;
+$$ LANGUAGE plpgsql;
+"""
+
+atualiza_views = """
+-- Função para atualizar as views materializadas
+CREATE OR REPLACE FUNCTION atualizar_views_materializadas()
+RETURNS void AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_exportacao_estado_anual;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_importacao_estado_anual;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_balanca_comercial;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION atualizar_mv_vlfob_setores()
+RETURNS void AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_vlfob_setores;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION atualizar_views_tendencias()
+RETURNS void AS $$
+BEGIN
+    REFRESH MATERIALIZED VIEW CONCURRENTLY mv_tendencia_saldo_setores;
 END;
 $$ LANGUAGE plpgsql;
 """

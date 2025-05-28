@@ -18,7 +18,7 @@ configure = {
 
 # Criar pool de conexões
 try:
-    pool = SimpleConnectionPool(1, 5,
+    pool = SimpleConnectionPool(1, 25,
                                 user=configure["user"],
                                 password=configure["password"],
                                 host=configure["host"],

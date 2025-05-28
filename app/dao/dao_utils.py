@@ -38,6 +38,8 @@ def build_where(
         filtros.append(f"id_municipio IN ({', '.join(municipios)})")
 
     if ncm:
+        if isinstance(ncm, int):
+            ncm = [ncm]
         ncm = [str(id) for id in ncm]
         filtros.append(f"produto.id_ncm IN ({', '.join(ncm)})")
 

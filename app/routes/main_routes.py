@@ -43,12 +43,36 @@ def busca_vlfob_setores():
     return routes_utils.return_response(res)
 
 
+@main.route('/busca_info_geral', methods=['GET'])
+def busca_info_geral():
+    args = routes_utils.get_args(request)
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+    if 'tipo' not in args.keys():
+        return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
+    infos = transacao_dao.info_geral(**args)
+    return routes_utils.return_response(infos)
+
+
+@main.route('/busca_hist_geral', methods = ['GET'])
+def busca_hist_geral():
+    args = routes_utils.get_args(request)
+    if not isinstance(args, dict):
+        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+    if 'tipo' not in args.keys():
+        return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
+    hist = transacao_dao.hist_geral(**args)
+    return routes_utils.return_response(hist)
+
+
 from .ncm_routes import ncm_bp
 from .bloco_routes import bloco_bp
 from .pais_routes import pais_bp
 from .sh_routes import sh_bp
 from .bc_routes import balanca_comercial_bp
 from .estados_routes import estado_bp
+from .setores_routes import setores_bp
+from .tendencias_routes import tendencias_bp
 
 all_blueprints = [
     main, 
@@ -57,5 +81,7 @@ all_blueprints = [
     bloco_bp, 
     sh_bp, 
     balanca_comercial_bp,
-    estado_bp
+    estado_bp,
+    setores_bp,
+    tendencias_bp
 ]

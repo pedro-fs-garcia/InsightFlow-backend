@@ -173,7 +173,7 @@ def busca_pais_hist(
         with get_connection() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cur:
 
-                where_statement = build_where(anos=anos, meses=meses, paises=paises, estados=estados, vias=vias, urfs=urfs, ncm=ncm)
+                where_statement = build_where(anos=anos, meses=meses, paises=paises, estados=estados, vias=vias, urfs=urfs)
                 where_statement = where_statement.replace('id_pais', 'pais.id_pais')
                 if ncm:
                     where_statement += f" AND id_produto IN ({', '.join([str(n) for n in ncm])})"
@@ -181,9 +181,9 @@ def busca_pais_hist(
                 query = f"""
                     SELECT pais.id_pais, pais.nome AS nome_pais,
                         ano, {'mes, ' if meses else ''}
-                        SUM(kg_liquido) as kg_liquido_total_{tipo},
-                        SUM(valor_fob) as valor_fob_total_{tipo},
-                        CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS valor_agregado_total_{tipo},
+                        SUM(kg_liquido) as kg_liquido_total,
+                        SUM(valor_fob) as valor_fob_total,
+                        CAST(SUM(valor_fob)/NULLIF(SUM(kg_liquido), 0) AS DECIMAL(15,2)) AS valor_agregado_total,
                         COUNT(*) AS total_registros
                     FROM pais
                     LEFT JOIN bloco ON pais.id_bloco = bloco.id_bloco

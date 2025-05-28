@@ -1,3 +1,4 @@
+from functools import cache
 import time
 from typing import List, Literal
 from psycopg2 import Error
@@ -7,10 +8,10 @@ from .dao_utils import build_where
 from ..database.database_connection import get_connection
 from ..utils.logging_config import app_logger, error_logger
 
-
+@cache
 def busca_top_estado(
     tipo: Literal['exp', 'imp'],
-    qtd: int = 26,
+    qtd: int = 27,
     anos: List[int] = None,
     meses: List[int] | None = None,
     ncm: List[int] | None = None,
@@ -105,6 +106,19 @@ def busca_todos_estados():
             with conn.cursor(cursor_factory=DictCursor) as cur:
                 cur.execute("SELECT id_estado, sigla, nome FROM estado ORDER BY nome ASC")
                 return [dict(row) for row in cur.fetchall()]
+    except Error as e:
+        error_logger.error("Erro ao buscar todos os estados.")
+        return None
+
+
+def busca_estado_sigla(id:int) -> str:
+    try:
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cur:
+                cur.execute(f"SELECT sigla FROM estado WHERE id_estado = {id}")
+                res = cur.fetchone()[0]
+                print("res: ", res)
+                return res
     except Error as e:
         error_logger.error("Erro ao buscar todos os estados.")
         return None

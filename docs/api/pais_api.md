@@ -80,24 +80,24 @@ GET /busca_pais_hist?tipo=ex&anos=2014&meses=1&meses=2
     {
       "ano": 2014,
       "id_pais": 43,
-      "kg_liquido_total_exp": "481565.00",
+      "kg_liquido_total": "481565.00",
       "mes": 1,
       "nome_bloco": "América Central e Caribe",
       "nome_pais": "Antígua e Barbuda",
       "total_registros": 17,
-      "valor_agregado_total_exp": "1.27",
-      "valor_fob_total_exp": "613477.00"
+      "valor_agregado_total": "1.27",
+      "valor_fob_total": "613477.00"
     },
     {
       "ano": 2014,
       "id_pais": 43,
-      "kg_liquido_total_exp": "412141.00",
+      "kg_liquido_total": "412141.00",
       "mes": 2,
       "nome_bloco": "América Central e Caribe",
       "nome_pais": "Antígua e Barbuda",
       "total_registros": 14,
-      "valor_agregado_total_exp": "0.89",
-      "valor_fob_total_exp": "368843.00"
+      "valor_agregado_total": "0.89",
+      "valor_fob_total": "368843.00"
     },
   ]
 }
