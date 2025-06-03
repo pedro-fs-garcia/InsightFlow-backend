@@ -1,3 +1,4 @@
+from app.dao import sh4_dao
 from app.dao.estado_dao import busca_estado_sigla
 from app.estatisticas import sh4_stats, tendencias_stats
 from app.estatisticas.analises_estatisticas_ncm import crescimento_mensal_balanca_ncm, crescimento_mensal_vlfob_ncm, previsao_tendencia_balanca_ncm, previsao_tendencia_va_ncm, previsao_tendencia_vlfob_ncm, regressao_linear_balanca_ncm, regressao_linear_vlfob_ncm, volatilidade_balanca_ncm, volatilidade_vlfob_ncm
@@ -244,13 +245,15 @@ def busca_tendencia_sh4():
     if not isinstance(args, dict):
         return jsonify({'error': f'Erro na requisição: {args}'}), 400
 
-    if args.get('sh4'):
-        args['sh4'] = str(args.get('sh4')[0])
+    # if args.get('sh4'):
+    #     args['sh4'] = str(args.get('sh4')[0])
     if args.get('ncm'):
         args['ncm'] = int(args.get('ncm')[0])
 
     if args.get('sh4'):
         tendencias = sh4_stats.tendencia_sh4(sh4=args.get('sh4'), estado=args.get('estado'), pais=args.get('pais'))
+        print(args)
+        # tendencias = sh4_dao.sh4_hist(**args)
     else:
         tendencias = tendencias_stats.tendencias_dashboard(ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
     
