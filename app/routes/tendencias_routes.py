@@ -2,6 +2,10 @@ from app.dao import sh4_dao
 from app.dao.estado_dao import busca_estado_sigla
 from app.estatisticas import sh4_stats, tendencias_stats
 from app.estatisticas.analises_estatisticas_ncm import crescimento_mensal_balanca_ncm, crescimento_mensal_vlfob_ncm, previsao_tendencia_balanca_ncm, previsao_tendencia_va_ncm, previsao_tendencia_vlfob_ncm, regressao_linear_balanca_ncm, regressao_linear_vlfob_ncm, volatilidade_balanca_ncm, volatilidade_vlfob_ncm
+from app.estatisticas.crescimento_mensal import crescimento_mensal_balanca, crescimento_mensal_vlfob
+from app.estatisticas.estatisticas_auxiliares import gerar_estatisticas_auxiliares
+from app.estatisticas.regressao_linear import calcular_regressao_linear
+from app.estatisticas.volatilidade import volatilidade_balanca, volatilidade_vlfob
 from data_pipeline.models.analises_auxiliares import gerar_estatisticas_auxiliares_vlfob
 from data_pipeline.models.vidente import Vidente
 from . import routes_utils
@@ -13,78 +17,78 @@ tendencias_bp = Blueprint("tendencias", __name__)
 vidente = Vidente()
 
 
-@tendencias_bp.route('/busca_tendencia_balanca_comercial', methods=['GET'])
-def busca_tendencia_balanca_comercial():
-    args = routes_utils.get_args(request)
-    if not isinstance(args, dict):
-        return jsonify({'error': f'Erro na requisição: {args}'}), 400
-    if args.get('ncm'):
-        balanca = previsao_tendencia_balanca_ncm(ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
-    else:
-        if args.get('estado'):
-            args['estado'] = busca_estado_sigla(args['estado'])
-        balanca = vidente.tendencia_balanca_comercial(estado = args.get('estado'), pais=args.get('pais'))
-    return routes_utils.return_response(balanca)
+# @tendencias_bp.route('/busca_tendencia_balanca_comercial', methods=['GET'])
+# def busca_tendencia_balanca_comercial():
+#     args = routes_utils.get_args(request)
+#     if not isinstance(args, dict):
+#         return jsonify({'error': f'Erro na requisição: {args}'}), 400
+#     if args.get('ncm'):
+#         balanca = previsao_tendencia_balanca_ncm(ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
+#     else:
+#         if args.get('estado'):
+#             args['estado'] = busca_estado_sigla(args['estado'])
+#         balanca = vidente.tendencia_balanca_comercial(estado = args.get('estado'), pais=args.get('pais'))
+#     return routes_utils.return_response(balanca)
 
 
-@tendencias_bp.route('/busca_tendencia_vlfob', methods=["GET"])
-def busca_tendencia_vlfob():
-    args:dict = routes_utils.get_args(request)
+# @tendencias_bp.route('/busca_tendencia_vlfob', methods=["GET"])
+# def busca_tendencia_vlfob():
+#     args:dict = routes_utils.get_args(request)
 
-    if not isinstance(args, dict):
-        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+#     if not isinstance(args, dict):
+#         return jsonify({'error': f'Erro na requisição: {args}'}), 400
 
-    if 'tipo' not in args.keys():
-        return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
+#     if 'tipo' not in args.keys():
+#         return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
     
 
-    if args.get("ncm"):
-        vlfob = previsao_tendencia_vlfob_ncm(tipo=args.get('tipo'), ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
-    else:
-        if args.get('tipo'):
-            args['tipo'] = args['tipo'].upper()
-        if args.get('estado'):
-            args['estado'] = busca_estado_sigla(args['estado'])
-        vlfob = vidente.tendencia_vlfob(
-            tipo = args.get('tipo'),
-            estado = args.get('estado'),
-            pais = args.get('pais')
-        )
+#     if args.get("ncm"):
+#         vlfob = previsao_tendencia_vlfob_ncm(tipo=args.get('tipo'), ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
+#     else:
+#         if args.get('tipo'):
+#             args['tipo'] = args['tipo'].upper()
+#         if args.get('estado'):
+#             args['estado'] = busca_estado_sigla(args['estado'])
+#         vlfob = vidente.tendencia_vlfob(
+#             tipo = args.get('tipo'),
+#             estado = args.get('estado'),
+#             pais = args.get('pais')
+#         )
     
-    if isinstance(vlfob, str):
-        return jsonify({'error': vlfob}), 403
+#     if isinstance(vlfob, str):
+#         return jsonify({'error': vlfob}), 403
     
-    return routes_utils.return_response(vlfob)
+#     return routes_utils.return_response(vlfob)
 
 
-@tendencias_bp.route('/busca_tendencia_va', methods=['GET'])
-def busca_tendencia_va():
-    args:dict = routes_utils.get_args(request)
+# @tendencias_bp.route('/busca_tendencia_va', methods=['GET'])
+# def busca_tendencia_va():
+#     args:dict = routes_utils.get_args(request)
 
-    if not isinstance(args, dict):
-        return jsonify({'error': f'Erro na requisição: {args}'}), 400
+#     if not isinstance(args, dict):
+#         return jsonify({'error': f'Erro na requisição: {args}'}), 400
 
-    if 'tipo' not in args.keys():
-        return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
+#     if 'tipo' not in args.keys():
+#         return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
     
 
-    if args.get('ncm'):
-        va = previsao_tendencia_va_ncm(tipo=args.get('tipo'), ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
-    else:
-        if args.get('tipo'):
-            args['tipo'] = args['tipo'].upper()
-        if args.get('estado'):
-            args['estado'] = busca_estado_sigla(args['estado'])
+#     if args.get('ncm'):
+#         va = previsao_tendencia_va_ncm(tipo=args.get('tipo'), ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
+#     else:
+#         if args.get('tipo'):
+#             args['tipo'] = args['tipo'].upper()
+#         if args.get('estado'):
+#             args['estado'] = busca_estado_sigla(args['estado'])
         
-        va = vidente.tendencia_valor_agregado(
-            tipo = args.get('tipo'),
-            estado = args.get('estado'),
-            pais = args.get('pais')
-        )
+#         va = vidente.tendencia_valor_agregado(
+#             tipo = args.get('tipo'),
+#             estado = args.get('estado'),
+#             pais = args.get('pais')
+#         )
     
-    if isinstance(va, str):
-        return jsonify({'error': va}), 403
-    return routes_utils.return_response(va)
+#     if isinstance(va, str):
+#         return jsonify({'error': va}), 403
+#     return routes_utils.return_response(va)
 
 
 @tendencias_bp.route('/crescimento_mensal_vlfob', methods=["GET"])
@@ -96,23 +100,16 @@ def crescimento_mensal():
 
     if 'tipo' not in args:
         return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
-
-    if not args.get('ncm'):
-        args['tipo'] = args['tipo'].upper()
-        if args.get('estado'):
-            args['estado'] = busca_estado_sigla(args['estado'])
-        dados = vidente.crescimento_mensal_vlfob(
-            tipo=args['tipo'],
-            estado=args.get('estado'),
-            pais=args.get('pais')
-        )
-    else:
-        dados = crescimento_mensal_vlfob_ncm(tipo=args.get('tipo'), ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
+    
+    args["estados"] = (args.get("estado"), ) if args.get("estado") else None
+    args["paises"] = (args.get("pais"), ) if args.get("pais") else None
+    
+    dados = crescimento_mensal_vlfob(tipo=args.get('tipo'), ncm=args.get('ncm'), estados=args.get('estados'), paises=args.get('paises'))
     return routes_utils.return_response(dados)
 
 
 @tendencias_bp.route('/volatilidade_vlfob', methods=["GET"])
-def volatilidade_vlfob():
+def volatilidade_vlfob_rota():
     args: dict = routes_utils.get_args(request)
 
     if not isinstance(args, dict):
@@ -121,18 +118,9 @@ def volatilidade_vlfob():
     if 'tipo' not in args:
         return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
 
-
-    if args.get('ncm'):
-        dados = volatilidade_vlfob_ncm(tipo=args.get('tipo'), ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
-    else:
-        args['tipo'] = args['tipo'].upper()
-        if args.get('estado'):
-            args['estado'] = busca_estado_sigla(args['estado'])
-        dados = vidente.volatilidade_vlfob(
-            tipo=args['tipo'],
-            estado=args.get('estado'),
-            pais=args.get('pais')
-        )
+    args["estados"] = (args.get("estado"), ) if args.get("estado") else None
+    args["paises"] = (args.get("pais"), ) if args.get("pais") else None
+    dados = volatilidade_vlfob(tipo=args.get('tipo'), ncm=args.get('ncm'), estados=args.get('estados'), paises=args.get('paises'))
 
     return routes_utils.return_response(dados)
 
@@ -147,18 +135,10 @@ def regressao_linear_vlfob():
     if 'tipo' not in args:
         return jsonify({'error': "Erro na requisição: Parâmetro 'tipo' é obrigatório."}), 400
     
-    if args.get('ncm'):
-        dados = regressao_linear_vlfob_ncm(tipo=args.get('tipo'), ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
-
-    else:
-        args['tipo'] = args['tipo'].upper()
-        if args.get('estado'):
-            args['estado'] = busca_estado_sigla(args['estado'])
-        dados = vidente.regressao_linear_vlfob(
-            tipo=args.get('tipo'),
-            estado=args.get('estado'),
-            pais=args.get('pais')
-        )
+    args["estados"] = (args.get("estado"), ) if args.get("estado") else None
+    args["paises"] = (args.get("pais"), ) if args.get("pais") else None
+        
+    dados = calcular_regressao_linear(crit="valor_fob", tipo=args.get('tipo'), ncm=args.get('ncm'), estados=args.get('estados'), paises=args.get('paises'))
     return routes_utils.return_response(dados)
 
 
@@ -168,17 +148,11 @@ def regressao_linear_balanca_comercial():
 
     if not isinstance(args, dict):
         return jsonify({'error': f'Erro na requisição: {args}'}), 400
+    
+    args["estados"] = (args.get("estado"), ) if args.get("estado") else None
+    args["paises"] = (args.get("pais"), ) if args.get("pais") else None
 
-    if args.get('ncm'):
-        dados = regressao_linear_balanca_ncm(ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
-    else:
-        if args.get('estado'):
-            args['estado'] = busca_estado_sigla(args['estado'])
-        dados = vidente.regressao_linear_balanca_comercial(
-            estado=args.get('estado'),
-            pais=args.get('pais')
-        )
-
+    dados = calcular_regressao_linear(crit="balanca", ncm=args.get('ncm'), estados=args.get('estados'), paises=args.get('paises'))
     return routes_utils.return_response(dados)
 
 
@@ -188,17 +162,11 @@ def crescimento_mensal_balanca_comercial():
 
     if not isinstance(args, dict):
         return jsonify({'error': f'Erro na requisição: {args}'}), 400
-
-    if args.get('ncm'):
-        dados = crescimento_mensal_balanca_ncm(ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
-    else:
-        if args.get('estado'):
-            args['estado'] = busca_estado_sigla(args['estado'])
-
-        dados = vidente.crescimento_mensal_balanca_comercial(
-            estado=args.get('estado'),
-            pais=args.get('pais')
-        )
+    
+    args["estados"] = (args.get("estado"), ) if args.get("estado") else None
+    args["paises"] = (args.get("pais"), ) if args.get("pais") else None
+    
+    dados = crescimento_mensal_balanca(ncm=args.get('ncm'), estados=args.get('estados'), paises=args.get('paises'))
     return routes_utils.return_response(dados)
 
 
@@ -209,16 +177,9 @@ def volatilidade_balanca_comercial():
     if not isinstance(args, dict):
         return jsonify({'error': f'Erro na requisição: {args}'}), 400
     
-    if args.get('ncm'):
-        dados = volatilidade_balanca_ncm(ncm=args.get('ncm'), estado=args.get('estado'), pais=args.get('pais'))
-    else:
-        if args.get('estado'):
-            args['estado'] = busca_estado_sigla(args['estado'])
-
-        dados = vidente.volatilidade_balanca_comercial(
-            estado=args.get('estado'),
-            pais=args.get('pais')
-        )
+    args["estados"] = (args.get("estado"), ) if args.get("estado") else None
+    args["paises"] = (args.get("pais"), ) if args.get("pais") else None
+    dados = volatilidade_balanca(ncm=args.get('ncm'), estados=args.get('estados'), paises=args.get('paises'))
     return routes_utils.return_response(dados)
 
 
@@ -227,15 +188,8 @@ def estatisticas_auxiliares_vlfob():
     args: dict = routes_utils.get_args(request)
     if not isinstance(args, dict):
         return jsonify({'error': f'Erro na requisição: {args}'}), 400
-
-    if args.get('estado'):
-        args['estado'] = busca_estado_sigla(args['estado'])
     
-    dados = gerar_estatisticas_auxiliares_vlfob(
-        ncm = args.get('ncm'),
-        estado = args.get('estado'),
-        pais=args.get('pais')
-    )
+    dados = gerar_estatisticas_auxiliares(ncm=args.get('ncm'), estados=args.get('estados'), paises=args.get('paises'))
     return routes_utils.return_response(dados)
 
 

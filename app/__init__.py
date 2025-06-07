@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 import os
 
+from app.estatisticas.estatisticas_auxiliares import dataframe_hhi
+
 load_dotenv()
 
 # Conectar ao Redis
@@ -14,6 +16,8 @@ limiter = Limiter(key_func=get_remote_address,
                 #   storage_uri="redis://localhost:6379",  # Usa Redis como armazenamento
                   default_limits=["10 per minute"]
                 )
+
+df_hhi = dataframe_hhi()
 
 def create_app():
     app = Flask(__name__)

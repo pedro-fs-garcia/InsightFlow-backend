@@ -17,7 +17,7 @@ def get_dataframe_ncm(tipo:str, ncm:int=None, estado:int=None, pais:int=None) ->
             condicionais.append(f"id_estado = {estado}")
         if pais:
             condicionais.append(f"id_pais = {pais}")
-        where_statement = "WHERE " + "AND ".join(condicionais)
+        where_statement = "WHERE " + " AND ".join(condicionais)
     
     query = f"""
         SELECT ano, mes,
