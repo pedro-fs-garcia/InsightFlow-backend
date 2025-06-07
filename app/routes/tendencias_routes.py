@@ -189,7 +189,11 @@ def estatisticas_auxiliares_vlfob():
     if not isinstance(args, dict):
         return jsonify({'error': f'Erro na requisição: {args}'}), 400
     
+    args["estados"] = (args.get("estado"), ) if args.get("estado") else None
+    args["paises"] = (args.get("pais"), ) if args.get("pais") else None
+    
     dados = gerar_estatisticas_auxiliares(ncm=args.get('ncm'), estados=args.get('estados'), paises=args.get('paises'))
+    print(dados)
     return routes_utils.return_response(dados)
 
 

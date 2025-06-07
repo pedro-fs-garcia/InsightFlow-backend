@@ -5,8 +5,6 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 import os
 
-from app.estatisticas.estatisticas_auxiliares import dataframe_hhi
-
 load_dotenv()
 
 # Conectar ao Redis
@@ -17,14 +15,12 @@ limiter = Limiter(key_func=get_remote_address,
                   default_limits=["10 per minute"]
                 )
 
-df_hhi = dataframe_hhi()
 
 def create_app():
     app = Flask(__name__)
     CORS(app)
     app.config['SECRET_KEY'] = os.getenv("SECRET_KEY",'sua-chave-secreta')
 
- 
 
     from .routes.main_routes import all_blueprints
     for bp in all_blueprints:
