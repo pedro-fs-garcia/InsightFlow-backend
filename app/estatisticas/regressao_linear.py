@@ -18,20 +18,29 @@ def calcular_regressao_linear (crit:Literal["valor_fob", "balanca"], tipo:str=No
         X = df[['timestamp']]
         y = df['balanca_comercial']
     
-    modelo = LinearRegression()
-    modelo.fit(X, y)
-    previsoes = modelo.predict(X)
-    df_resultado = pd.DataFrame({
-        'ds': df['DATA'].astype(str),
-        'y_real': y,
-        'y_regressao': previsoes
-    })
-    return {
-        "dados": df_resultado.to_dict(orient='records'),
-        "coeficiente_angular": modelo.coef_[0],
-        "intercepto": modelo.intercept_,
-        "r2": modelo.score(X, y)
-    }
+    try:
+        modelo = LinearRegression()
+        modelo.fit(X, y)
+        previsoes = modelo.predict(X)
+        df_resultado = pd.DataFrame({
+            'ds': df['DATA'].astype(str),
+            'y_real': y,
+            'y_regressao': previsoes
+        })
+        return {
+            "dados": df_resultado.to_dict(orient='records'),
+            "coeficiente_angular": modelo.coef_[0],
+            "intercepto": modelo.intercept_,
+            "r2": modelo.score(X, y)
+        }
+    except Exception as e:
+        error_logger.error(f"Erro ao gerar Regrassão linear: {e}")
+        return {
+            "dados": {},
+            "coeficiente_angular": 0,
+            "intercepto": 0,
+            "r2": 0
+        } 
 
 
 
