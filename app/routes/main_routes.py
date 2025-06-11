@@ -1,4 +1,3 @@
-from functools import cache
 from flask import Blueprint, json, jsonify, request
 
 from app.dao import sh4_dao, transacao_dao

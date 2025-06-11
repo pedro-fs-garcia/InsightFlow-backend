@@ -1,4 +1,4 @@
-from functools import cache
+from app import cache
 from typing import List, Literal
 import pandas as pd
 
@@ -18,7 +18,8 @@ def hist_sh4 (df:pd.DataFrame, tipo:str, crit=Literal['KG_LIQUIDO', 'VL_FOB', 'b
     df_prophet['y'] = pd.to_numeric(df_prophet['y'], errors='coerce') 
     return df_prophet
 
-@cache
+
+@cache.memoize(timeout=3600)
 def tendencia_sh4(sh4: List[str], estado: List[int] = None, pais: List[int] = None):
     tendencia_dashboard = {}
     vidente = Vidente()  # Supondo que essa classe implemente .gerar_profecia_json()

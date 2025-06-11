@@ -1,4 +1,4 @@
-from functools import cache
+from app import cache
 import json
 import time
 from typing import List, Literal
@@ -47,7 +47,7 @@ def pesquisa_sh4_por_nome(nome:str) -> List[dict] | None:
         return None
     
 
-@cache
+@cache.memoize(timeout=3600)
 def busca_vlfob_sh4(
         sh4: tuple[str, ...],
         anos: tuple[int, ...] | None = None,
@@ -100,7 +100,7 @@ def busca_sh4_info(sh4:str):
         return None
 
 
-@cache
+@cache.memoize(timeout=3600)
 def ranking_sh4(
     tipo:str, 
     qtd:int=10, 
@@ -139,7 +139,7 @@ def ranking_sh4(
         return
 
 
-@cache
+@cache.memoize(timeout=3600)
 def sh4_hist(
     tipo: Literal['exp', 'imp'], 
     sh4: List[str], 
@@ -184,6 +184,7 @@ def sh4_hist(
         return None
 
 
+@cache.memoize(timeout=3600)
 def busca_info_setor(setor: str, tipo:str, anos:tuple[int,...]|None, pais:int|None, estado:int|None):
     global setores    
     sh4_list = tuple(setores.get(setor, {}).get('sh4', []))
@@ -218,7 +219,7 @@ def busca_info_setor(setor: str, tipo:str, anos:tuple[int,...]|None, pais:int|No
         return 
 
 
-@cache
+# @cache.memoize(timeout=3600)
 def busca_info_setores(anos:tuple[int,...]|None, pais:int|None, estado:int|None):
     global setores
     resposta = []

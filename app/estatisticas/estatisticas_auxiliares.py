@@ -1,4 +1,4 @@
-from functools import cache
+from app import cache
 from typing import List, Literal
 import pandas as pd
 from psycopg2 import Error, OperationalError
@@ -145,7 +145,7 @@ def analise_hhi(ncm: List[int] = None, estados: List[int] = None, paises: List[i
     return df_pivot.round(4).to_dict(orient='records')
 
 
-@cache
+@cache.memoize(timeout=3600)
 def gerar_estatisticas_auxiliares(ncm:List[int]=None, estados:List[int]=None, paises:List[int]=None):
     """
     Gera todos os dados para o dashboard em um único JSON com todas as análises.
