@@ -1,22 +1,10 @@
-Claro! Aqui está o conteúdo completo e atualizado do seu `README.md`, incluindo:
-
-* informações sobre uso de Redis,
-* instruções para rodar Redis com e sem Docker,
-* melhorias de organização,
-* e um layout pronto para colar direto no seu repositório.
-
----
-
-
 # InsightFlow - Backend
 
-Backend do projeto **InsightFlow**, desenvolvido como parte das disciplinas de **Estrutura de Dados**, **Engenharia de Software II** e **Programação Orientada a Objetos**.
+Backend do projeto **InsightFlow**, desenvolvido como projeto de integração das disciplinas de **Estrutura de Dados**, **Engenharia de Software II** e **Programação Orientada a Objetos**.
 
-Esta API REST, implementada em **Python (Flask)**, fornece dados de desempenho do comércio exterior brasileiro, com foco em informações de **exportação e importação** dos anos de **2014 a 2024**, disponibilizadas pelo **Ministério do Desenvolvimento, Indústria, Comércio e Serviços (MDIC)**.
+Esta API REST, implementada em **Python (Flask)**, fornece dados e estatísticas de desempenho do comércio exterior brasileiro, com foco em informações de **exportação e importação** dos anos de **2014 a 2024**, disponibilizadas pelo **Ministério do Desenvolvimento, Indústria, Comércio e Serviços (MDIC)**.
 
-Através da API, é possível consultar dados e análises que identificam a performance de **estados**, **municípios** e **produtos** no comércio exterior brasileiro.
-
----
+Através da API, é possível consultar dados e análises que identificam a performance de **estados**, **países** e **produtos** no comércio exterior brasileiro.
 
 ## 🛠️ Tecnologias utilizadas
 
@@ -33,13 +21,29 @@ Através da API, é possível consultar dados e análises que identificam a perf
   <img alt="Jira" height="30" width="40" src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jira/jira-original.svg">
 </p>
 
+## 📊 Análise Estatística e Machine Learning
+O InsightFlow Backend não apenas serve dados brutos, mas também realiza **análises estatísticas avançadas** e utiliza **técnicas de machine learning** para oferecer insights reais sobre o comércio exterior brasileiro.
+
+- **[Statsmodels](https://www.statsmodels.org/)**: Utilizado para análises estatísticas robustas, como regressão linear, séries temporais e testes de hipóteses.
+- **Pandas & NumPy**: Manipulação e estruturação de grandes volumes de dados.
+- **Scikit-learn**: Aplicações de aprendizado de máquina para identificar padrões nos dados de exportação/importação.
+
+### 🔍 Exemplos de análises realizadas
+
+- **Cálculo do Índice de Herfindahl-Hirschman (HHI)** para medir a concentração de exportações por produto, município ou estado.
+- **Comparações de desempenho anual e crescimento percentual** por categoria de produto.
+- **Regressão Linear com Statsmodels** para avaliar correlações entre variáveis econômicas e volumes exportados.
+- **Séries temporais e previsões** para detectar tendências de exportação em produtos estratégicos.
+
+Essas análises são integradas diretamente às rotas da API, permitindo ao frontend consumir dados já processados, prontos para visualização em gráficos e dashboards interativos.
+
 ---
 
 ## 🚀 Como rodar o projeto
 
 Siga os passos abaixo para configurar e executar o servidor corretamente:
 
----
+
 
 ### 1️⃣ Instalar e configurar o PostgreSQL
 
