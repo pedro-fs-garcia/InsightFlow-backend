@@ -122,7 +122,7 @@ def analise_hhi(
     return dados_json
 
 
-@cache.memoize(timeout=3600)
+@cache.memoize(timeout=60*60*24)
 def gerar_estatisticas_auxiliares_vlfob(ncm:int|None = None, estado:str|None=None, pais:str|None=None):
     """
     Gera todos os dados para o dashboard em um único JSON com todas as análises.

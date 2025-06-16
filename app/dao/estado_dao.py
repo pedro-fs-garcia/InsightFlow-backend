@@ -8,7 +8,7 @@ from .dao_utils import build_where
 from ..database.database_connection import get_connection
 from ..utils.logging_config import app_logger, error_logger
 
-@cache.memoize(timeout=600)
+@cache.memoize(timeout=60*60*24)
 def busca_top_estado(
     tipo: Literal['exp', 'imp'],
     qtd: int = 27,
@@ -78,7 +78,7 @@ def busca_top_estado(
         return None
 
 
-@cache.memoize(timeout=600)
+@cache.memoize(timeout=60*60*24)
 def busca_estado_hist(
         tipo:Literal['exp', 'imp'],
         estados: tuple[int, ...],

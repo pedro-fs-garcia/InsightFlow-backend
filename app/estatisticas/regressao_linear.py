@@ -7,7 +7,7 @@ from app.utils.logging_config import app_logger, error_logger
 from app import cache
 
 
-@cache.memoize(timeout=3600)
+@cache.memoize(timeout=60*60*24)
 def calcular_regressao_linear (crit:Literal["valor_fob", "balanca"], tipo:str=None, ncm:List[int]=None, estados:List[int]=None, paises:List[int]=None):
     if crit == 'valor_fob':
         df = historico_vlfob_dataframe(tipo, ncm, estados, paises)

@@ -55,7 +55,7 @@ def get_videncia(df:pd.DataFrame, coluna_valor:str):
     df_prophet['y'] = df_prophet['y'].fillna(0)
     return vidente.gerar_profecia_json(df_prophet)
 
-@cache.memoize(timeout=3600)
+@cache.memoize(timeout=60*60*24)
 def tendencias_dashboard(ncm: int  = None, estado: str = None, pais: int = None):
     colunas_padrao = [
         'DATA',

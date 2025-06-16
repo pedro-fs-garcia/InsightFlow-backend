@@ -19,7 +19,7 @@ def hist_sh4 (df:pd.DataFrame, tipo:str, crit=Literal['KG_LIQUIDO', 'VL_FOB', 'b
     return df_prophet
 
 
-@cache.memoize(timeout=3600)
+@cache.memoize(timeout=60*60*24)
 def tendencia_sh4(sh4: List[str], estado: List[int] = None, pais: List[int] = None):
     tendencia_dashboard = {}
     vidente = Vidente()  # Supondo que essa classe implemente .gerar_profecia_json()

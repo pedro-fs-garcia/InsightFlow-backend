@@ -192,7 +192,7 @@ def busca_por_ncm(
 
 
 
-@cache.memoize(timeout=3600)
+@cache.memoize(timeout=60*60*24)
 def busca_ncm_hist(
         tipo:Literal['exp', 'imp'], 
         ncm:List[int], 
@@ -236,7 +236,7 @@ def busca_ncm_hist(
 
 
     
-@cache.memoize(timeout=3600)    
+@cache.memoize(timeout=60*60*24)    
 def busca_top_ncm(
         tipo: Literal['exp', 'imp'],
         qtd: int = 10, 
